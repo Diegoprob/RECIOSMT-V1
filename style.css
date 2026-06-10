@@ -1,204 +1,194 @@
-let jugadores =
-JSON.parse(localStorage.getItem("rakionJugadores")) || [];
+body{
+background:#0f1117;
+color:white;
+font-family:Arial, sans-serif;
+margin:0;
+padding:0;
+}
 
-let historial =
-JSON.parse(localStorage.getItem("rakionHistorial")) || [];
+header{
+text-align:center;
+padding:20px;
+background:#171b26;
+color:#ffb347;
+font-weight:bold;
+font-size:22px;
+letter-spacing:1px;
+}
 
-const listaJugadores = document.getElementById("listaJugadores");
-const equipoA = document.getElementById("equipoA");
-const equipoB = document.getElementById("equipoB");
-const ruleta = document.getElementById("ruleta");
+.container{
+width:95%;
+max-width:1200px;
+margin:auto;
+padding:10px;
+}
 
-/* ================= GUARDAR ================= */
+.card{
+background:#171b26;
+padding:15px;
+margin:15px 0;
+border-radius:12px;
+border:1px solid #2b3245;
+}
 
-function guardar(){
-localStorage.setItem("rakionJugadores", JSON.stringify(jugadores));
-localStorage.setItem("rakionHistorial", JSON.stringify(historial));
+button{
+background:#3a86ff;
+color:white;
+border:none;
+padding:10px 14px;
+border-radius:8px;
+cursor:pointer;
+font-weight:bold;
+transition:0.2s;
+}
+
+button:hover{
+opacity:0.8;
+transform:scale(1.02);
 }
 
 /* ================= JUGADORES ================= */
 
-function renderJugadores(){
-listaJugadores.innerHTML = "";
-
-jugadores.forEach((n,i)=>{
-listaJugadores.innerHTML += `
-<div class="jugador-card" data-name="${n}">
-<input type="checkbox" class="activo">
-<span>${n}</span>
-
-<select class="bombo">
-<option value="">Bombo</option>
-<option value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-<option value="5">5</option>
-<option value="6">6</option>
-<option value="7">7</option>
-<option value="8">8</option>
-</select>
-</div>`;
-});
+.jugador-card{
+display:flex;
+align-items:center;
+gap:10px;
+padding:10px;
+margin:6px 0;
+background:#202636;
+border-radius:10px;
+border:1px solid #2b3245;
 }
 
-/* ================= ANIMACIÓN RULETA PRO ================= */
-
-function ruletaPro(opciones){
-return new Promise(res=>{
-
-let velocidad = 50;
-let tiempo = 0;
-let max = 30;
-
-let intervalo = setInterval(()=>{
-
-ruleta.innerText =
-opciones[Math.floor(Math.random()*opciones.length)];
-
-tiempo++;
-
-if(tiempo > 10) velocidad += 20;
-
-if(tiempo > max){
-clearInterval(intervalo);
-res(ruleta.innerText);
+.jugador-card span{
+font-weight:bold;
 }
 
-}, velocidad);
-
-});
+.jugador-card select{
+margin-left:auto;
+padding:6px;
+border-radius:6px;
+border:none;
+background:#0d1320;
+color:white;
 }
 
-/* ================= SORTEO EQUIPOS ================= */
+/* checkbox */
+.jugador-card input{
+transform:scale(1.2);
+}
 
-document.getElementById("btnSortear").onclick = async () => {
+/* ================= RULETA ================= */
 
-equipoA.innerHTML = "";
-equipoB.innerHTML = "";
+.ruleta-container{
+height:120px;
+display:flex;
+align-items:center;
+justify-content:center;
+background:#0d1320;
+border:2px solid #3a86ff;
+border-radius:12px;
+margin-bottom:10px;
+}
 
-let bombos = {};
+#ruleta{
+font-size:28px;
+font-weight:bold;
+color:#ffd166;
+text-align:center;
+}
 
-/* recoger jugadores activos */
-document.querySelectorAll(".jugador-card").forEach(p=>{
+/* ================= EQUIPOS ================= */
 
-let activo = p.querySelector(".activo").checked;
-if(!activo) return;
+.equipos{
+display:flex;
+gap:15px;
+flex-wrap:wrap;
+}
 
-let nombre = p.dataset.name;
-let bombo = p.querySelector(".bombo").value;
+.equipo{
+flex:1;
+min-width:250px;
+background:#202636;
+padding:15px;
+border-radius:12px;
+border:1px solid #2b3245;
+}
 
-if(!bombo) return;
+.equipo h3{
+font-size:18px;
+letter-spacing:1px;
+margin-bottom:10px;
+}
 
-if(!bombos[bombo]) bombos[bombo] = [];
+/* 🟥 ROJO (1ERO) */
+.equipo:nth-child(1){
+border:2px solid #ff3b3b;
+}
 
-bombos[bombo].push(nombre);
-});
+/* 🟦 AZUL (2DO) */
+.equipo:nth-child(2){
+border:2px solid #3a86ff;
+}
 
-/* validar */
-for(let b in bombos){
-if(bombos[b].length !== 2){
-alert("Cada bombo debe tener EXACTAMENTE 2 jugadores");
-return;
+.equipo ul{
+list-style:none;
+padding:0;
+}
+
+.equipo li{
+padding:8px;
+margin-bottom:6px;
+background:#2c3448;
+border-radius:8px;
+transition:0.3s;
+}
+
+/* animación ganador */
+.ultimo-sorteado{
+color:#00ffcc;
+font-weight:bold;
+text-shadow:0 0 10px #00ffcc;
+animation:pop 0.3s ease;
+}
+
+@keyframes pop{
+from{
+transform:scale(0.8);
+opacity:0;
+}
+to{
+transform:scale(1);
+opacity:1;
 }
 }
 
-let A = [];
-let B = [];
+/* ================= MAPAS ================= */
 
-/* sorteo animado por bombo */
-for(let b of Object.keys(bombos)){
-
-ruleta.innerText = "🎡 Bombo " + b;
-await new Promise(r => setTimeout(r, 800));
-
-let grupo = bombos[b];
-
-let ganador = await ruletaPro(grupo);
-let perdedor = grupo.find(x => x !== ganador);
-
-/* animación salida */
-await mostrarResultado(ganador, perdedor);
-
-A.push(ganador);
-B.push(perdedor);
+.mapa-ganador{
+font-size:20px;
+margin:8px 0;
+padding:8px;
+background:#202636;
+border-radius:8px;
+animation:pop 0.3s ease;
 }
 
-/* guardar historial */
-historial.push({
-fecha: new Date().toLocaleString(),
-A, B
-});
-
-guardar();
-
-};
-
-/* ================= RESULTADO EN VIVO ================= */
-
-function mostrarResultado(ganador, perdedor){
-return new Promise(res=>{
-
-let liA = document.createElement("li");
-liA.textContent = "🏆 " + ganador;
-liA.style.color = "#00ffcc";
-equipoA.appendChild(liA);
-
-let liB = document.createElement("li");
-liB.textContent = "❌ " + perdedor;
-liB.style.color = "#ff4d4d";
-equipoB.appendChild(liB);
-
-/* efecto de pausa emocional */
-setTimeout(res, 900);
-
-});
+/* ranking colores */
+.mapa-ganador:nth-child(1){
+border-left:4px solid gold;
+}
+.mapa-ganador:nth-child(2){
+border-left:4px solid silver;
+}
+.mapa-ganador:nth-child(3){
+border-left:4px solid #cd7f32;
 }
 
-/* ================= MAPAS PRO ================= */
+/* ================= RESPONSIVE ================= */
 
-document.getElementById("btnSortearMapa").onclick = async () => {
-
-let mapas =
-[...document.querySelectorAll(".mapa")]
-.filter(x=>x.checked)
-.map(x=>x.value);
-
-if(mapas.length < 2){
-alert("Selecciona al menos 2 mapas");
-return;
+@media(max-width:768px){
+.equipos{
+flex-direction:column;
 }
-
-document.getElementById("resultadoMapas").innerHTML =
-"🎡 Iniciando sorteo de mapas...";
-
-await new Promise(r => setTimeout(r, 1500));
-
-let copia = [...mapas];
-let resultados = [];
-
-/* animación eliminación */
-while(copia.length){
-
-let r = copia[Math.floor(Math.random()*copia.length)];
-resultados.push(r);
-copia = copia.filter(x=>x!==r);
-
-await new Promise(r=>setTimeout(r, 600));
 }
-
-/* mostrar solo top 3 */
-resultados = resultados.slice(0,3);
-
-document.getElementById("resultadoMapas").innerHTML =
-resultados.map((m,i)=>`
-<div class="mapa-ganador">
-${i===0?"🥇":i===1?"🥈":"🥉"} ${m}
-</div>
-`).join("");
-
-};
-
-/* ================= INIT ================= */
-
-renderJugadores();
