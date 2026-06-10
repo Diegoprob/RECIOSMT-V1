@@ -5,11 +5,8 @@ let historial =
 JSON.parse(localStorage.getItem("rakionHistorial")) || [];
 
 const listaJugadores = document.getElementById("listaJugadores");
-const participantesDiv = document.getElementById("participantes");
-
 const equipoA = document.getElementById("equipoA");
 const equipoB = document.getElementById("equipoB");
-
 const ruleta = document.getElementById("ruleta");
 
 /* ================= GUARDAR ================= */
@@ -31,8 +28,6 @@ listaJugadores.innerHTML += `
 <button onclick="eliminar(${i})">Eliminar</button>
 </div>`;
 });
-
-renderParticipantes();
 }
 
 function eliminar(i){
@@ -51,32 +46,6 @@ renderJugadores();
 
 document.getElementById("nuevoJugador").value = "";
 };
-
-/* ================= PARTICIPANTES ================= */
-
-function renderParticipantes(){
-participantesDiv.innerHTML = "";
-
-jugadores.forEach(n=>{
-participantesDiv.innerHTML += `
-<div class="participante">
-<input type="checkbox" value="${n}">
-<span>${n}</span>
-
-<select>
-<option value="">Bombo</option>
-<option value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-<option value="5">5</option>
-<option value="6">6</option>
-<option value="7">7</option>
-<option value="8">8</option>
-</select>
-</div>`;
-});
-}
 
 /* ================= RULETA ================= */
 
@@ -98,7 +67,7 @@ res(ruleta.innerText);
 });
 }
 
-/* ================= SORTEO EQUIPOS ================= */
+/* ================= SORTEO ================= */
 
 document.getElementById("btnSortear").onclick = async () => {
 
@@ -108,40 +77,41 @@ equipoB.innerHTML = "";
 document.querySelectorAll(".ultimo-sorteado")
 .forEach(x => x.classList.remove("ultimo-sorteado"));
 
+/* 👇 NUEVO SISTEMA SIMPLIFICADO */
 let bombos = {};
 
-document.querySelectorAll(".participante").forEach(p=>{
-if(!p.querySelector("input").checked) return;
+document.querySelectorAll(".jugador-select").forEach(div=>{
 
-let nombre = p.querySelector("input").value;
-let b = p.querySelector("select").value;
+let activo = div.querySelector("input").checked;
+if(!activo) return;
 
-if(!b) return;
+let nombre = div.dataset.name;
+let bombo = div.querySelector("select").value;
 
-if(!bombos[b]) bombos[b] = [];
+if(!bombo) return;
 
-bombos[b].push(nombre);
+if(!bombos[bombo]) bombos[bombo] = [];
+
+bombos[bombo].push(nombre);
 });
 
 let A = [];
 let B = [];
 
-const ordenBombos = Object.keys(bombos).sort();
+for(let b in bombos){
 
-for(let b of ordenBombos){
+let grupo = bombos[b];
 
-let jugadoresBombo = bombos[b];
-
-if(jugadoresBombo.length !== 2){
-alert("Cada bombo debe tener 2 jugadores");
+if(grupo.length !== 2){
+alert("Cada bombo debe tener exactamente 2 jugadores");
 return;
 }
 
 ruleta.innerText = "🎡 Sorteando Bombo " + b;
 await new Promise(r => setTimeout(r, 800));
 
-let ganador = await animar(jugadoresBombo);
-let perdedor = jugadoresBombo.find(x => x !== ganador);
+let ganador = await animar(grupo);
+let perdedor = grupo.find(x => x !== ganador);
 
 A.push(ganador);
 B.push(perdedor);
@@ -167,45 +137,30 @@ A, B
 guardar();
 };
 
-/* ================= MAPAS ================= */
+/* ================= RENDER NUEVO ================= */
 
-document.getElementById("btnSortearMapa").onclick = async () => {
+function renderJugadores(){
+listaJugadores.innerHTML = "";
 
-let seleccionados =
-[...document.querySelectorAll(".mapa")]
-.filter(x => x.checked)
-.map(x => x.value);
+jugadores.forEach(n=>{
+listaJugadores.innerHTML += `
+<div class="jugador-select" data-name="${n}">
+<input type="checkbox">
+<span>${n}</span>
 
-if(seleccionados.length < 2){
-alert("Selecciona al menos 2 mapas");
-return;
+<select>
+<option value="">Bombo</option>
+<option value="1">1</option>
+<option value="2">2</option>
+<option value="3">3</option>
+<option value="4">4</option>
+<option value="5">5</option>
+<option value="6">6</option>
+<option value="7">7</option>
+<option value="8">8</option>
+</select>
+</div>`;
+});
 }
-
-document.getElementById("resultadoMapas").innerHTML =
-"🎡 Sorteando mapas...";
-
-await new Promise(r => setTimeout(r, 2000));
-
-let copia = [...seleccionados];
-let resultados = [];
-
-while(copia.length > 0){
-let r = copia[Math.floor(Math.random() * copia.length)];
-resultados.push(r);
-copia = copia.filter(x => x !== r);
-}
-
-resultados = resultados.slice(0, 2);
-
-document.getElementById("resultadoMapas").innerHTML =
-resultados.map((m, i) => `
-<div class="mapa-ganador">
-${i === 0 ? "🥇" : "🥈"} Lugar ${i + 1}: ${m}
-</div>
-`).join("");
-
-};
-
-/* ================= INIT ================= */
 
 renderJugadores();
