@@ -78,6 +78,12 @@ button:active {
   transform: scale(0.98);
 }
 
+button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
 .btn-principal {
   width: 100%;
   font-size: 16px;
@@ -100,6 +106,14 @@ button:active {
 .btnEliminar {
   background: #ff3b3b;
   padding: 7px 10px;
+}
+
+.btn-rojo {
+  background: #ff3b3b;
+}
+
+.btn-azul {
+  background: #3a86ff;
 }
 
 /* ================= INPUT ================= */
@@ -163,10 +177,16 @@ input[type="text"] {
   margin-right: 7px;
 }
 
+.resultado-mapas-card {
+  border: 2px solid #ffd166;
+  background: linear-gradient(135deg, rgba(23, 27, 38, 0.98), rgba(48, 40, 20, 0.95));
+}
+
 .resultado {
   margin-top: 12px;
-  font-size: 18px;
+  font-size: 20px;
   line-height: 1.8;
+  color: #ffffff;
 }
 
 .resultado strong {
@@ -306,6 +326,61 @@ input[type="text"] {
   }
 }
 
+/* ================= GANADOR ================= */
+
+.partida-actual {
+  background: #202636;
+  border: 1px solid #2b3245;
+  border-radius: 10px;
+  padding: 12px;
+  margin: 12px 0;
+  line-height: 1.7;
+}
+
+.ganador-botones {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ganador-botones button {
+  font-size: 16px;
+}
+
+/* ================= TABLAS ================= */
+
+.tabla-contenedor {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 12px;
+  min-width: 520px;
+}
+
+th,
+td {
+  border: 1px solid #2b3245;
+  padding: 10px;
+  text-align: center;
+}
+
+th {
+  background: #0d1320;
+  color: #ffd166;
+}
+
+td {
+  background: #202636;
+}
+
+td:first-child {
+  font-weight: bold;
+  text-align: left;
+}
+
 /* ================= HISTORIAL ================= */
 
 .historial-item {
@@ -315,10 +390,21 @@ input[type="text"] {
   padding: 10px;
   margin-top: 8px;
   color: #e8ecf6;
+  line-height: 1.6;
 }
 
 .historial-item small {
   color: #ffd166;
+}
+
+.ganador-rojo {
+  color: #ff8a8a;
+  font-weight: bold;
+}
+
+.ganador-azul {
+  color: #7cb3ff;
+  font-weight: bold;
 }
 
 /* ================= RESPONSIVE ================= */
@@ -352,6 +438,10 @@ input[type="text"] {
   .jugador-card .btnEliminar {
     grid-column: 1 / -1;
     width: 100%;
+  }
+
+  .ganador-botones {
+    grid-template-columns: 1fr;
   }
 
   #ruleta {
