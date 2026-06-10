@@ -42,53 +42,23 @@ listaJugadores.innerHTML += `
 });
 }
 
-/* ================= RULETA PRO ================= */
+/* ================= RULETA EQUIPOS ================= */
 
 function ruletaPro(lista){
 return new Promise(res=>{
-
 let i = 0;
-let velocidad = 60;
-
 let intervalo = setInterval(()=>{
 
 ruleta.innerText =
-lista[Math.floor(Math.random() * lista.length)];
+lista[Math.floor(Math.random()*lista.length)];
 
 i++;
-
-/* efecto emoción (acelera y luego desacelera) */
-if(i > 10) velocidad += 20;
-
-if(i > 30){
+if(i > 25){
 clearInterval(intervalo);
 res(ruleta.innerText);
 }
 
-}, velocidad);
-
-});
-}
-
-/* ================= RESULTADO EN VIVO ================= */
-
-function mostrarResultado(ganador, perdedor){
-return new Promise(res=>{
-
-let liA = document.createElement("li");
-liA.textContent = "🥇 ROJO (1ERO) - " + ganador;
-liA.style.color = "#ff3b3b";
-liA.style.fontWeight = "bold";
-equipoA.appendChild(liA);
-
-let liB = document.createElement("li");
-liB.textContent = "🥈 AZUL (2DO) - " + perdedor;
-liB.style.color = "#3a86ff";
-equipoB.appendChild(liB);
-
-/* pausa emocional */
-setTimeout(res, 900);
-
+}, 80);
 });
 }
 
@@ -99,12 +69,8 @@ document.getElementById("btnSortear").onclick = async () => {
 equipoA.innerHTML = "";
 equipoB.innerHTML = "";
 
-document.querySelectorAll(".ultimo-sorteado")
-.forEach(x => x.classList.remove("ultimo-sorteado"));
-
 let bombos = {};
 
-/* recolectar jugadores */
 document.querySelectorAll(".jugador-card").forEach(p=>{
 
 let activo = p.querySelector(".activo").checked;
@@ -120,19 +86,12 @@ if(!bombos[bombo]) bombos[bombo] = [];
 bombos[bombo].push(nombre);
 });
 
-/* validar */
 for(let b in bombos){
+
 if(bombos[b].length !== 2){
 alert("Cada bombo debe tener EXACTAMENTE 2 jugadores");
 return;
 }
-}
-
-let A = [];
-let B = [];
-
-/* sorteo por bombos */
-for(let b of Object.keys(bombos)){
 
 ruleta.innerText = "🎡 Bombo " + b;
 await new Promise(r => setTimeout(r, 800));
@@ -142,25 +101,28 @@ let grupo = bombos[b];
 let ganador = await ruletaPro(grupo);
 let perdedor = grupo.find(x => x !== ganador);
 
-await mostrarResultado(ganador, perdedor);
+/* SOLO efecto simple (sin texto en cada jugador) */
+let liA = document.createElement("li");
+liA.textContent = ganador;
+equipoA.appendChild(liA);
 
-A.push(ganador);
-B.push(perdedor);
+let liB = document.createElement("li");
+liB.textContent = perdedor;
+equipoB.appendChild(liB);
 
 await new Promise(r => setTimeout(r, 900));
 }
 
-/* historial */
 historial.push({
 fecha: new Date().toLocaleString(),
-A, B
+A: [],
+B: []
 });
 
 guardar();
-
 };
 
-/* ================= MAPAS PRO ================= */
+/* ================= MAPAS PRO (ARREGLADO VISUAL) ================= */
 
 document.getElementById("btnSortearMapa").onclick = async () => {
 
@@ -174,36 +136,46 @@ alert("Selecciona al menos 2 mapas");
 return;
 }
 
-document.getElementById("resultadoMapas").innerHTML =
-"🎡 Sorteando mapas...";
-
-await new Promise(r => setTimeout(r, 1500));
-
 let copia = [...mapas];
-let resultados = [];
 
-/* eliminación progresiva */
-while(copia.length){
+/* ================= 1ER LUGAR (3s visual) ================= */
 
-let r = copia[Math.floor(Math.random() * copia.length)];
-resultados.push(r);
-copia = copia.filter(x => x !== r);
+let ganador1 = "";
 
-await new Promise(r => setTimeout(r, 600));
-}
+let t1 = setInterval(()=>{
+ruleta.innerText =
+copia[Math.floor(Math.random()*copia.length)];
+}, 100);
 
-/* TOP 3 */
-resultados = resultados.slice(0, 3);
+await new Promise(r => setTimeout(r, 3000));
+clearInterval(t1);
+
+ganador1 = ruleta.innerText;
+
+/* eliminar ganador */
+copia = copia.filter(x => x !== ganador1);
 
 document.getElementById("resultadoMapas").innerHTML =
-resultados.map((m,i)=>`
-<div class="mapa-ganador">
-${i===0?"🥇":i===1?"🥈":"🥉"} ${m}
-</div>
-`).join("");
+`🥇 1ER LUGAR: ${ganador1}`;
+
+/* ================= 2DO LUGAR (3s visual) ================= */
+
+let t2 = setInterval(()=>{
+ruleta.innerText =
+copia[Math.floor(Math.random()*copia.length)];
+}, 100);
+
+await new Promise(r => setTimeout(r, 3000));
+clearInterval(t2);
+
+let ganador2 = ruleta.innerText;
+
+document.getElementById("resultadoMapas").innerHTML +=
+`<br>🥈 2DO LUGAR: ${ganador2}`;
 
 };
 
 /* ================= INIT ================= */
 
+renderJugadores();
 renderJugadores();
