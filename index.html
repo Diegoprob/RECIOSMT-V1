@@ -1,138 +1,640 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rakion MT Sorteador</title>
-  <link rel="stylesheet" href="style.css">
-</head>
+/* ================= DATOS ================= */
 
-<body>
+const STORAGE_JUGADORES = "rakionJugadores";
+const STORAGE_HISTORIAL = "rakionHistorial";
+const STORAGE_REGISTROS = "rakionRegistrosVersus";
+const STORAGE_PARTIDA_ACTUAL = "rakionPartidaActual";
 
-<header>
-  <h1>⚔️ Rakion MT Sorteador</h1>
-  <p>Sorteo de mapas, equipos por bombos y registro de victorias</p>
-</header>
+let jugadores = JSON.parse(localStorage.getItem(STORAGE_JUGADORES)) || [];
+let historial = JSON.parse(localStorage.getItem(STORAGE_HISTORIAL)) || [];
+let registrosVersus = JSON.parse(localStorage.getItem(STORAGE_REGISTROS)) || [];
+let partidaActual = JSON.parse(localStorage.getItem(STORAGE_PARTIDA_ACTUAL)) || null;
 
-<main class="container">
+/* Convierte jugadores antiguos tipo texto a objeto */
+jugadores = jugadores.map(j => {
+  if (typeof j === "string") {
+    return {
+      nombre: j,
+      activo: false,
+      bombo: ""
+    };
+  }
 
-  <!-- ================= MAPAS ================= -->
-  <section class="card">
-    <h2>🗺️ Sorteo de Mapas</h2>
+  return {
+    nombre: j.nombre || "",
+    activo: Boolean(j.activo),
+    bombo: j.bombo || ""
+  };
+}).filter(j => j.nombre.trim() !== "");
 
-    <div class="mapas-grid">
-      <label><input type="checkbox" class="mapa" value="AnotherTomb"> AnotherTomb</label>
-      <label><input type="checkbox" class="mapa" value="Lost Temple"> Lost Temple</label>
-      <label><input type="checkbox" class="mapa" value="Templo Serpiente"> Templo Serpiente</label>
-      <label><input type="checkbox" class="mapa" value="Tumba del Rey"> Tumba del Rey</label>
+/* Convierte historiales antiguos */
+historial = historial.map(h => {
+  return {
+    id: h.id || Date.now() + Math.random(),
+    fecha: h.fecha || "",
+    rojo: h.rojo || h.A || [],
+    azul: h.azul || h.B || [],
+    ganador: h.ganador || null
+  };
+});
+
+/* ================= ELEMENTOS ================= */
+
+const listaJugadores = document.getElementById("listaJugadores");
+const equipoA = document.getElementById("equipoA");
+const equipoB = document.getElementById("equipoB");
+const ruleta = document.getElementById("ruleta");
+const nuevoJugador = document.getElementById("nuevoJugador");
+const btnAgregar = document.getElementById("btnAgregar");
+const resultadoMapas = document.getElementById("resultadoMapas");
+const historialDiv = document.getElementById("historial");
+const partidaActualDiv = document.getElementById("partidaActual");
+const rankingJugadoresDiv = document.getElementById("rankingJugadores");
+const historialVersusDiv = document.getElementById("historialVersus");
+const btnGanoRojo = document.getElementById("btnGanoRojo");
+const btnGanoAzul = document.getElementById("btnGanoAzul");
+
+/* ================= GUARDAR ================= */
+
+function guardar() {
+  localStorage.setItem(STORAGE_JUGADORES, JSON.stringify(jugadores));
+  localStorage.setItem(STORAGE_HISTORIAL, JSON.stringify(historial));
+  localStorage.setItem(STORAGE_REGISTROS, JSON.stringify(registrosVersus));
+  localStorage.setItem(STORAGE_PARTIDA_ACTUAL, JSON.stringify(partidaActual));
+}
+
+/* ================= UTILIDADES ================= */
+
+function esperar(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function activarRuleta() {
+  ruleta.classList.add("ruleta-activa");
+}
+
+function detenerRuleta() {
+  ruleta.classList.remove("ruleta-activa");
+}
+
+function mezclar(lista) {
+  const copia = [...lista];
+
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+  }
+
+  return copia;
+}
+
+function porcentaje(victorias, partidas) {
+  if (partidas === 0) return "0%";
+  return Math.round((victorias / partidas) * 100) + "%";
+}
+
+/* ================= RENDER JUGADORES ================= */
+
+function renderJugadores() {
+  listaJugadores.innerHTML = "";
+
+  if (jugadores.length === 0) {
+    listaJugadores.innerHTML = `
+      <p class="ayuda">Todavía no agregaste jugadores.</p>
+    `;
+    return;
+  }
+
+  jugadores.forEach((jugador, index) => {
+    const div = document.createElement("div");
+    div.className = "jugador-card";
+    div.dataset.index = index;
+
+    div.innerHTML = `
+      <input type="checkbox" class="activo" ${jugador.activo ? "checked" : ""}>
+      <span>${jugador.nombre}</span>
+
+      <select class="bombo">
+        <option value="">Bombo</option>
+        <option value="1" ${jugador.bombo === "1" ? "selected" : ""}>Bombo 1</option>
+        <option value="2" ${jugador.bombo === "2" ? "selected" : ""}>Bombo 2</option>
+        <option value="3" ${jugador.bombo === "3" ? "selected" : ""}>Bombo 3</option>
+        <option value="4" ${jugador.bombo === "4" ? "selected" : ""}>Bombo 4</option>
+        <option value="5" ${jugador.bombo === "5" ? "selected" : ""}>Bombo 5</option>
+        <option value="6" ${jugador.bombo === "6" ? "selected" : ""}>Bombo 6</option>
+        <option value="7" ${jugador.bombo === "7" ? "selected" : ""}>Bombo 7</option>
+        <option value="8" ${jugador.bombo === "8" ? "selected" : ""}>Bombo 8</option>
+      </select>
+
+      <button class="btnEliminar">❌</button>
+    `;
+
+    listaJugadores.appendChild(div);
+  });
+
+  document.querySelectorAll(".jugador-card").forEach(card => {
+    const index = Number(card.dataset.index);
+
+    card.querySelector(".activo").addEventListener("change", e => {
+      jugadores[index].activo = e.target.checked;
+      guardar();
+    });
+
+    card.querySelector(".bombo").addEventListener("change", e => {
+      jugadores[index].bombo = e.target.value;
+      guardar();
+    });
+
+    card.querySelector(".btnEliminar").addEventListener("click", () => {
+      const confirmar = confirm(`¿Eliminar a ${jugadores[index].nombre}?`);
+
+      if (!confirmar) return;
+
+      jugadores.splice(index, 1);
+      guardar();
+      renderJugadores();
+      renderRanking();
+    });
+  });
+}
+
+/* ================= AGREGAR JUGADOR ================= */
+
+function agregarJugador() {
+  const nombre = nuevoJugador.value.trim();
+
+  if (nombre === "") {
+    alert("Escribe el nombre del jugador");
+    return;
+  }
+
+  const existe = jugadores.some(j =>
+    j.nombre.toLowerCase() === nombre.toLowerCase()
+  );
+
+  if (existe) {
+    alert("Ese jugador ya existe");
+    return;
+  }
+
+  jugadores.push({
+    nombre,
+    activo: true,
+    bombo: ""
+  });
+
+  nuevoJugador.value = "";
+  guardar();
+  renderJugadores();
+  renderRanking();
+}
+
+btnAgregar.addEventListener("click", agregarJugador);
+
+nuevoJugador.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    agregarJugador();
+  }
+});
+
+/* ================= ACCIONES JUGADORES ================= */
+
+document.getElementById("btnSeleccionarTodos").addEventListener("click", () => {
+  jugadores.forEach(j => j.activo = true);
+  guardar();
+  renderJugadores();
+});
+
+document.getElementById("btnLimpiarSeleccion").addEventListener("click", () => {
+  jugadores.forEach(j => j.activo = false);
+  guardar();
+  renderJugadores();
+});
+
+document.getElementById("btnBorrarJugadores").addEventListener("click", () => {
+  if (jugadores.length === 0) return;
+
+  const confirmar = confirm("¿Seguro que deseas borrar todos los jugadores?");
+
+  if (!confirmar) return;
+
+  jugadores = [];
+  guardar();
+  renderJugadores();
+  renderRanking();
+});
+
+/* ================= RULETA ================= */
+
+function ruletaPro(lista, duracion = 2200) {
+  return new Promise(resolve => {
+    activarRuleta();
+
+    let ganador = "";
+    const inicio = Date.now();
+
+    const intervalo = setInterval(() => {
+      ganador = lista[Math.floor(Math.random() * lista.length)];
+      ruleta.innerText = ganador;
+
+      if (Date.now() - inicio >= duracion) {
+        clearInterval(intervalo);
+        detenerRuleta();
+        resolve(ganador);
+      }
+    }, 80);
+  });
+}
+
+/* ================= SORTEO EQUIPOS ================= */
+
+document.getElementById("btnSortear").addEventListener("click", async () => {
+  equipoA.innerHTML = "";
+  equipoB.innerHTML = "";
+
+  const seleccionados = jugadores.filter(j => j.activo);
+
+  if (seleccionados.length < 2) {
+    alert("Selecciona al menos 2 jugadores");
+    return;
+  }
+
+  const sinBombo = seleccionados.filter(j => !j.bombo);
+
+  if (sinBombo.length > 0) {
+    alert("Todos los jugadores seleccionados deben tener un bombo");
+    return;
+  }
+
+  const bombos = {};
+
+  seleccionados.forEach(j => {
+    if (!bombos[j.bombo]) bombos[j.bombo] = [];
+    bombos[j.bombo].push(j.nombre);
+  });
+
+  const numerosBombos = Object.keys(bombos).sort((a, b) => Number(a) - Number(b));
+
+  for (const b of numerosBombos) {
+    if (bombos[b].length !== 2) {
+      alert(`El bombo ${b} tiene ${bombos[b].length} jugador(es). Cada bombo debe tener EXACTAMENTE 2 jugadores.`);
+      return;
+    }
+  }
+
+  const rojo = [];
+  const azul = [];
+  const sorteoId = Date.now();
+
+  ruleta.innerText = "🎡 Iniciando sorteo...";
+  await esperar(700);
+
+  for (const b of numerosBombos) {
+    ruleta.innerText = `🎡 Bombo ${b}`;
+    await esperar(800);
+
+    const grupo = mezclar(bombos[b]);
+    const ganador = await ruletaPro(grupo);
+    const perdedor = grupo.find(nombre => nombre !== ganador);
+
+    const liRojo = document.createElement("li");
+    liRojo.textContent = ganador;
+    equipoA.appendChild(liRojo);
+
+    const liAzul = document.createElement("li");
+    liAzul.textContent = perdedor;
+    equipoB.appendChild(liAzul);
+
+    rojo.push(ganador);
+    azul.push(perdedor);
+
+    await esperar(650);
+  }
+
+  partidaActual = {
+    id: sorteoId,
+    fechaSorteo: new Date().toLocaleString("es-PE"),
+    rojo,
+    azul
+  };
+
+  historial.unshift({
+    id: sorteoId,
+    fecha: partidaActual.fechaSorteo,
+    rojo,
+    azul,
+    ganador: null
+  });
+
+  historial = historial.slice(0, 20);
+
+  guardar();
+  renderPartidaActual();
+  renderHistorial();
+
+  ruleta.innerText = "✅ Sorteo terminado";
+});
+
+/* ================= LIMPIAR EQUIPOS ================= */
+
+document.getElementById("btnLimpiarEquipos").addEventListener("click", () => {
+  equipoA.innerHTML = "";
+  equipoB.innerHTML = "";
+  ruleta.innerText = "Listo";
+});
+
+/* ================= SORTEO DE MAPAS ================= */
+
+document.getElementById("btnSortearMapa").addEventListener("click", async () => {
+  const mapas = [...document.querySelectorAll(".mapa")]
+    .filter(x => x.checked)
+    .map(x => x.value);
+
+  if (mapas.length < 2) {
+    alert("Selecciona al menos 2 mapas");
+    return;
+  }
+
+  resultadoMapas.innerHTML = "";
+  let copia = mezclar(mapas);
+
+  ruleta.innerText = "🎲 Sorteando 1er mapa...";
+  await esperar(600);
+
+  const ganador1 = await ruletaPro(copia, 3000);
+  copia = copia.filter(mapa => mapa !== ganador1);
+
+  resultadoMapas.innerHTML = `
+    <div class="mapa-ganador">🥇 1ER LUGAR: <strong>${ganador1}</strong></div>
+  `;
+
+  ruleta.innerText = "🎲 Sorteando 2do mapa...";
+  await esperar(800);
+
+  const ganador2 = await ruletaPro(copia, 3000);
+
+  resultadoMapas.innerHTML += `
+    <div class="mapa-ganador">🥈 2DO LUGAR: <strong>${ganador2}</strong></div>
+  `;
+
+  ruleta.innerText = "✅ Mapas sorteados";
+});
+
+/* ================= PARTIDA ACTUAL ================= */
+
+function renderPartidaActual() {
+  if (!partidaActual) {
+    partidaActualDiv.innerHTML = "No hay sorteo pendiente por registrar.";
+    btnGanoRojo.disabled = true;
+    btnGanoAzul.disabled = true;
+    return;
+  }
+
+  partidaActualDiv.innerHTML = `
+    <strong>Sorteo:</strong> ${partidaActual.fechaSorteo}<br>
+    🟥 <strong>Rojo:</strong> ${partidaActual.rojo.join(", ")}<br>
+    🟦 <strong>Azul:</strong> ${partidaActual.azul.join(", ")}
+  `;
+
+  btnGanoRojo.disabled = false;
+  btnGanoAzul.disabled = false;
+}
+
+function registrarGanador(equipoGanador) {
+  if (!partidaActual) {
+    alert("Primero debes realizar un sorteo.");
+    return;
+  }
+
+  const textoEquipo = equipoGanador === "rojo" ? "ROJO" : "AZUL";
+  const confirmar = confirm(`¿Confirmas que ganó el equipo ${textoEquipo}?`);
+
+  if (!confirmar) return;
+
+  const ganadores = equipoGanador === "rojo" ? partidaActual.rojo : partidaActual.azul;
+  const perdedores = equipoGanador === "rojo" ? partidaActual.azul : partidaActual.rojo;
+
+  registrosVersus.unshift({
+    id: Date.now(),
+    sorteoId: partidaActual.id,
+    fecha: new Date().toLocaleString("es-PE"),
+    ganador: equipoGanador,
+    ganadores,
+    perdedores,
+    rojo: partidaActual.rojo,
+    azul: partidaActual.azul
+  });
+
+  registrosVersus = registrosVersus.slice(0, 50);
+
+  const sorteo = historial.find(h => h.id === partidaActual.id);
+
+  if (sorteo) {
+    sorteo.ganador = equipoGanador;
+  }
+
+  partidaActual = null;
+
+  guardar();
+  renderPartidaActual();
+  renderRanking();
+  renderHistorial();
+  renderHistorialVersus();
+
+  alert(`Victoria registrada para: ${ganadores.join(", ")}`);
+}
+
+btnGanoRojo.addEventListener("click", () => registrarGanador("rojo"));
+btnGanoAzul.addEventListener("click", () => registrarGanador("azul"));
+
+/* ================= RANKING ================= */
+
+function calcularEstadisticas() {
+  const stats = {};
+
+  jugadores.forEach(j => {
+    stats[j.nombre] = {
+      jugador: j.nombre,
+      partidas: 0,
+      victorias: 0,
+      derrotas: 0
+    };
+  });
+
+  registrosVersus.forEach(registro => {
+    registro.ganadores.forEach(nombre => {
+      if (!stats[nombre]) {
+        stats[nombre] = {
+          jugador: nombre,
+          partidas: 0,
+          victorias: 0,
+          derrotas: 0
+        };
+      }
+
+      stats[nombre].partidas++;
+      stats[nombre].victorias++;
+    });
+
+    registro.perdedores.forEach(nombre => {
+      if (!stats[nombre]) {
+        stats[nombre] = {
+          jugador: nombre,
+          partidas: 0,
+          victorias: 0,
+          derrotas: 0
+        };
+      }
+
+      stats[nombre].partidas++;
+      stats[nombre].derrotas++;
+    });
+  });
+
+  return Object.values(stats).sort((a, b) => {
+    if (b.victorias !== a.victorias) return b.victorias - a.victorias;
+    if (b.partidas !== a.partidas) return b.partidas - a.partidas;
+    return a.jugador.localeCompare(b.jugador);
+  });
+}
+
+function renderRanking() {
+  const stats = calcularEstadisticas();
+
+  if (stats.length === 0) {
+    rankingJugadoresDiv.innerHTML = `<p class="ayuda">Todavía no hay jugadores registrados.</p>`;
+    return;
+  }
+
+  let filas = "";
+
+  stats.forEach((s, index) => {
+    filas += `
+      <tr>
+        <td>${index + 1}. ${s.jugador}</td>
+        <td>${s.partidas}</td>
+        <td>${s.victorias}</td>
+        <td>${s.derrotas}</td>
+        <td>${porcentaje(s.victorias, s.partidas)}</td>
+      </tr>
+    `;
+  });
+
+  rankingJugadoresDiv.innerHTML = `
+    <div class="tabla-contenedor">
+      <table>
+        <thead>
+          <tr>
+            <th>Jugador</th>
+            <th>Partidas</th>
+            <th>Victorias</th>
+            <th>Derrotas</th>
+            <th>% Victoria</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+        </tbody>
+      </table>
     </div>
+  `;
+}
 
-    <button id="btnSortearMapa">🎲 Sortear Mapas</button>
-  </section>
+document.getElementById("btnBorrarRegistros").addEventListener("click", () => {
+  if (registrosVersus.length === 0) return;
 
-  <!-- ================= JUGADORES ================= -->
-  <section class="card">
-    <h2>👥 Jugadores</h2>
+  const confirmar = confirm("¿Seguro que deseas borrar todos los registros de victorias?");
 
-    <div class="agregar-jugador">
-      <input id="nuevoJugador" type="text" placeholder="Nombre del jugador">
-      <button id="btnAgregar">➕ Agregar</button>
-    </div>
+  if (!confirmar) return;
 
-    <div class="acciones">
-      <button id="btnSeleccionarTodos" class="btn-secundario">✅ Seleccionar todos</button>
-      <button id="btnLimpiarSeleccion" class="btn-secundario">⬜ Limpiar selección</button>
-      <button id="btnBorrarJugadores" class="btn-peligro">🗑️ Borrar jugadores</button>
-    </div>
+  registrosVersus = [];
+  historial.forEach(h => h.ganador = null);
+  partidaActual = null;
 
-    <p class="ayuda">
-      Marca a los jugadores que participarán y coloca exactamente 2 jugadores por cada bombo.
-    </p>
+  guardar();
+  renderPartidaActual();
+  renderRanking();
+  renderHistorial();
+  renderHistorialVersus();
+});
 
-    <div id="listaJugadores"></div>
-  </section>
+/* ================= HISTORIAL SORTEOS ================= */
 
-  <!-- ================= RULETA ================= -->
-  <section class="card">
-    <h2>🎡 Ruleta de Sorteo</h2>
+function renderHistorial() {
+  historialDiv.innerHTML = "";
 
-    <div class="ruleta-container">
-      <div id="ruleta">Listo</div>
-    </div>
+  if (historial.length === 0) {
+    historialDiv.innerHTML = `<p class="ayuda">Todavía no hay sorteos guardados.</p>`;
+    return;
+  }
 
-    <button id="btnSortear" class="btn-principal">🚀 Iniciar Sorteo</button>
-    <button id="btnLimpiarEquipos" class="btn-secundario">🧹 Limpiar equipos</button>
-  </section>
+  historial.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "historial-item";
 
-  <!-- ================= RESULTADO DE MAPAS ARRIBA DE LOS EQUIPOS ================= -->
-  <section class="card resultado-mapas-card">
-    <h2>🗺️ Resultado de Mapas</h2>
-    <div id="resultadoMapas" class="resultado">
-      Todavía no se sortearon mapas.
-    </div>
-  </section>
+    let ganadorTexto = "Pendiente de registrar";
+    if (item.ganador === "rojo") ganadorTexto = `<span class="ganador-rojo">Ganó ROJO</span>`;
+    if (item.ganador === "azul") ganadorTexto = `<span class="ganador-azul">Ganó AZUL</span>`;
 
-  <!-- ================= EQUIPOS ================= -->
-  <section class="card equipos">
-    <div class="equipo rojo">
-      <h3>🟥 ROJO (1ERO)</h3>
-      <ul id="equipoA"></ul>
-    </div>
+    div.innerHTML = `
+      <small>${item.fecha}</small><br>
+      🟥 <strong>Rojo:</strong> ${item.rojo.join(", ")}<br>
+      🟦 <strong>Azul:</strong> ${item.azul.join(", ")}<br>
+      🏆 <strong>Resultado:</strong> ${ganadorTexto}
+    `;
 
-    <div class="equipo azul">
-      <h3>🟦 AZUL (2DO)</h3>
-      <ul id="equipoB"></ul>
-    </div>
-  </section>
+    historialDiv.appendChild(div);
+  });
+}
 
-  <!-- ================= GANADOR DEL VERSUS ================= -->
-  <section class="card">
-    <h2>🏆 Registrar ganador del versus</h2>
+document.getElementById("btnBorrarHistorial").addEventListener("click", () => {
+  if (historial.length === 0) return;
 
-    <p class="ayuda">
-      Después de jugar el versus, marca qué equipo ganó. Se sumará 1 victoria a cada jugador del equipo ganador.
-    </p>
+  const confirmar = confirm("¿Seguro que deseas borrar el historial de sorteos? No borra el ranking de victorias.");
 
-    <div id="partidaActual" class="partida-actual">
-      No hay sorteo pendiente por registrar.
-    </div>
+  if (!confirmar) return;
 
-    <div class="ganador-botones">
-      <button id="btnGanoRojo" class="btn-rojo">🟥 Ganó ROJO</button>
-      <button id="btnGanoAzul" class="btn-azul">🟦 Ganó AZUL</button>
-    </div>
-  </section>
+  historial = [];
+  partidaActual = null;
 
-  <!-- ================= RANKING ================= -->
-  <section class="card">
-    <h2>📊 Ranking de jugadores</h2>
+  guardar();
+  renderPartidaActual();
+  renderHistorial();
+});
 
-    <div class="acciones">
-      <button id="btnBorrarRegistros" class="btn-peligro">🗑️ Borrar registros de victorias</button>
-    </div>
+/* ================= HISTORIAL VERSUS ================= */
 
-    <div id="rankingJugadores"></div>
-  </section>
+function renderHistorialVersus() {
+  historialVersusDiv.innerHTML = "";
 
-  <!-- ================= HISTORIAL ================= -->
-  <section class="card">
-    <h2>📜 Historial de sorteos</h2>
+  if (registrosVersus.length === 0) {
+    historialVersusDiv.innerHTML = `<p class="ayuda">Todavía no hay versus registrados.</p>`;
+    return;
+  }
 
-    <div class="acciones">
-      <button id="btnBorrarHistorial" class="btn-peligro">🗑️ Borrar historial de sorteos</button>
-    </div>
+  registrosVersus.forEach(registro => {
+    const div = document.createElement("div");
+    div.className = "historial-item";
 
-    <div id="historial"></div>
-  </section>
+    const clase = registro.ganador === "rojo" ? "ganador-rojo" : "ganador-azul";
+    const equipo = registro.ganador === "rojo" ? "ROJO" : "AZUL";
 
-  <!-- ================= HISTORIAL VERSUS ================= -->
-  <section class="card">
-    <h2>⚔️ Historial de versus jugados</h2>
-    <div id="historialVersus"></div>
-  </section>
+    div.innerHTML = `
+      <small>${registro.fecha}</small><br>
+      🏆 <strong>Ganó:</strong> <span class="${clase}">${equipo}</span><br>
+      ✅ <strong>Ganadores:</strong> ${registro.ganadores.join(", ")}<br>
+      ❌ <strong>Perdedores:</strong> ${registro.perdedores.join(", ")}
+    `;
 
-</main>
+    historialVersusDiv.appendChild(div);
+  });
+}
 
-<script src="script.js"></script>
-</body>
-</html>
+/* ================= INIT ================= */
+
+guardar();
+renderJugadores();
+renderPartidaActual();
+renderRanking();
+renderHistorial();
+renderHistorialVersus();
