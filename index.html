@@ -1,77 +1,94 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Rakion MT Sorteador V4</title>
-
-<link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rakion MT Sorteador</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <header>
-<h1>⚔️ Rakion MT Sorteador</h1>
+  <h1>⚔️ Rakion MT Sorteador</h1>
+  <p>Sorteo de mapas y equipos por bombos</p>
 </header>
 
-<div class="container">
+<main class="container">
 
-<!-- ================= MAPAS ================= -->
-<div class="card">
-<h2>🗺️ Sorteo de Mapas</h2>
+  <!-- ================= MAPAS ================= -->
+  <section class="card">
+    <h2>🗺️ Sorteo de Mapas</h2>
 
-<label><input type="checkbox" class="mapa" value="AnotherTomb"> AnotherTomb</label><br>
-<label><input type="checkbox" class="mapa" value="Lost Temple"> Lost Temple</label><br>
-<label><input type="checkbox" class="mapa" value="Templo Serpiente"> Templo Serpiente</label><br>
-<label><input type="checkbox" class="mapa" value="Tumba del Rey"> Tumba del Rey</label><br>
+    <div class="mapas-grid">
+      <label><input type="checkbox" class="mapa" value="AnotherTomb"> AnotherTomb</label>
+      <label><input type="checkbox" class="mapa" value="Lost Temple"> Lost Temple</label>
+      <label><input type="checkbox" class="mapa" value="Templo Serpiente"> Templo Serpiente</label>
+      <label><input type="checkbox" class="mapa" value="Tumba del Rey"> Tumba del Rey</label>
+    </div>
 
-<br>
-<button id="btnSortearMapa">🎲 Sortear Mapas</button>
+    <button id="btnSortearMapa">🎲 Sortear Mapas</button>
 
-<div id="resultadoMapas" style="margin-top:10px;"></div>
-</div>
+    <div id="resultadoMapas" class="resultado"></div>
+  </section>
 
-<!-- ================= JUGADORES ================= -->
-<div class="card">
-<h2>👥 Jugadores</h2>
+  <!-- ================= JUGADORES ================= -->
+  <section class="card">
+    <h2>👥 Jugadores</h2>
 
-<div class="agregar-jugador">
-<input id="nuevoJugador" type="text" placeholder="Nombre del jugador">
-<button id="btnAgregar">Agregar</button>
-</div>
+    <div class="agregar-jugador">
+      <input id="nuevoJugador" type="text" placeholder="Nombre del jugador">
+      <button id="btnAgregar">➕ Agregar</button>
+    </div>
 
-<div id="listaJugadores"></div>
-</div>
+    <div class="acciones">
+      <button id="btnSeleccionarTodos" class="btn-secundario">✅ Seleccionar todos</button>
+      <button id="btnLimpiarSeleccion" class="btn-secundario">⬜ Limpiar selección</button>
+      <button id="btnBorrarJugadores" class="btn-peligro">🗑️ Borrar jugadores</button>
+    </div>
 
-<!-- ================= RULETA ================= -->
-<div class="card">
-<h2>🎡 Ruleta de Sorteo</h2>
+    <p class="ayuda">
+      Marca a los jugadores que participarán y coloca exactamente 2 jugadores por cada bombo.
+    </p>
 
-<div class="ruleta-container">
-<div id="ruleta">Listo</div>
-</div>
+    <div id="listaJugadores"></div>
+  </section>
 
-<button id="btnSortear">Iniciar Sorteo</button>
-</div>
+  <!-- ================= RULETA ================= -->
+  <section class="card">
+    <h2>🎡 Ruleta de Sorteo</h2>
 
-<!-- ================= EQUIPOS ================= -->
-<div class="card equipos">
+    <div class="ruleta-container">
+      <div id="ruleta">Listo</div>
+    </div>
 
-<!-- 🟥 ROJO (1ERO) -->
-<div class="equipo">
-<h3>🟥 ROJO (1ERO)</h3>
-<ul id="equipoA"></ul>
-</div>
+    <button id="btnSortear" class="btn-principal">🚀 Iniciar Sorteo</button>
+    <button id="btnLimpiarEquipos" class="btn-secundario">🧹 Limpiar equipos</button>
+  </section>
 
-<!-- 🟦 AZUL (2DO) -->
-<div class="equipo">
-<h3>🟦 AZUL (2DO)</h3>
-<ul id="equipoB"></ul>
-</div>
+  <!-- ================= EQUIPOS ================= -->
+  <section class="card equipos">
+    <div class="equipo rojo">
+      <h3>🟥 ROJO (1ERO)</h3>
+      <ul id="equipoA"></ul>
+    </div>
 
-</div>
+    <div class="equipo azul">
+      <h3>🟦 AZUL (2DO)</h3>
+      <ul id="equipoB"></ul>
+    </div>
+  </section>
 
-</div>
+  <!-- ================= HISTORIAL ================= -->
+  <section class="card">
+    <h2>📜 Historial</h2>
+    <div class="acciones">
+      <button id="btnBorrarHistorial" class="btn-peligro">🗑️ Borrar historial</button>
+    </div>
+    <div id="historial"></div>
+  </section>
+
+</main>
 
 <script src="script.js"></script>
 </body>
