@@ -12,12 +12,14 @@ const equipoB = document.getElementById("equipoB");
 
 const ruleta = document.getElementById("ruleta");
 
+/* ================= GUARDAR ================= */
+
 function guardar(){
 localStorage.setItem("rakionJugadores", JSON.stringify(jugadores));
 localStorage.setItem("rakionHistorial", JSON.stringify(historial));
 }
 
-/* ---------------- JUGADORES ---------------- */
+/* ================= JUGADORES ================= */
 
 function renderJugadores(){
 listaJugadores.innerHTML = "";
@@ -26,7 +28,7 @@ jugadores.forEach((n,i)=>{
 listaJugadores.innerHTML += `
 <div class="jugador-item">
 <span>${n}</span>
-<button onclick="eliminar(${i})">X</button>
+<button onclick="eliminar(${i})">Eliminar</button>
 </div>`;
 });
 
@@ -42,12 +44,15 @@ renderJugadores();
 document.getElementById("btnAgregar").onclick = () => {
 const n = document.getElementById("nuevoJugador").value;
 if(!n) return;
+
 jugadores.push(n);
 guardar();
 renderJugadores();
+
+document.getElementById("nuevoJugador").value = "";
 };
 
-/* ---------------- PARTICIPANTES ---------------- */
+/* ================= PARTICIPANTES ================= */
 
 function renderParticipantes(){
 participantesDiv.innerHTML = "";
@@ -57,6 +62,7 @@ participantesDiv.innerHTML += `
 <div class="participante">
 <input type="checkbox" value="${n}">
 <span>${n}</span>
+
 <select>
 <option value="">Bombo</option>
 <option value="1">1</option>
@@ -72,27 +78,35 @@ participantesDiv.innerHTML += `
 });
 }
 
-/* ---------------- RULETA ---------------- */
+/* ================= RULETA ================= */
 
 function animar(lista){
 return new Promise(res=>{
-let i=0;
-let int=setInterval(()=>{
-ruleta.innerText = lista[Math.floor(Math.random()*lista.length)];
-if(i++>20){
+let i = 0;
+
+let int = setInterval(()=>{
+
+ruleta.innerText =
+lista[Math.floor(Math.random() * lista.length)];
+
+if(i++ > 20){
 clearInterval(int);
 res(ruleta.innerText);
 }
+
 },100);
 });
 }
 
-/* ---------------- SORTEO ---------------- */
+/* ================= SORTEO EQUIPOS ================= */
 
 document.getElementById("btnSortear").onclick = async () => {
 
-equipoA.innerHTML="";
-equipoB.innerHTML="";
+equipoA.innerHTML = "";
+equipoB.innerHTML = "";
+
+document.querySelectorAll(".ultimo-sorteado")
+.forEach(x => x.classList.remove("ultimo-sorteado"));
 
 let bombos = {};
 
@@ -104,48 +118,58 @@ let b = p.querySelector("select").value;
 
 if(!b) return;
 
-if(!bombos[b]) bombos[b]=[];
+if(!bombos[b]) bombos[b] = [];
 
 bombos[b].push(nombre);
 });
 
-let A=[], B=[];
+let A = [];
+let B = [];
 
-for(let b in bombos){
+const ordenBombos = Object.keys(bombos).sort();
 
-if(bombos[b].length!==2){
+for(let b of ordenBombos){
+
+let jugadoresBombo = bombos[b];
+
+if(jugadoresBombo.length !== 2){
 alert("Cada bombo debe tener 2 jugadores");
 return;
 }
 
-let ganador = await animar(bombos[b]);
-let perdedor = bombos[b].find(x=>x!==ganador);
+ruleta.innerText = "🎡 Sorteando Bombo " + b;
+await new Promise(r => setTimeout(r, 800));
+
+let ganador = await animar(jugadoresBombo);
+let perdedor = jugadoresBombo.find(x => x !== ganador);
 
 A.push(ganador);
 B.push(perdedor);
 
-let liA=document.createElement("li");
-liA.textContent=ganador;
+let liA = document.createElement("li");
+liA.textContent = ganador;
 liA.classList.add("ultimo-sorteado");
 equipoA.appendChild(liA);
 
-let liB=document.createElement("li");
-liB.textContent=perdedor;
+let liB = document.createElement("li");
+liB.textContent = perdedor;
 liB.classList.add("ultimo-sorteado");
 equipoB.appendChild(liB);
+
+await new Promise(r => setTimeout(r, 1200));
 }
 
 historial.push({
-fecha:new Date().toLocaleString(),
-A,B
+fecha: new Date().toLocaleString(),
+A, B
 });
 
 guardar();
 };
 
-/* ---------------- MAPAS ---------------- */
+/* ================= MAPAS ================= */
 
-document.getElementById("btnSortearMapa").onclick = () => {
+document.getElementById("btnSortearMapa").onclick = async () => {
 
 let seleccionados =
 [...document.querySelectorAll(".mapa")]
@@ -157,18 +181,20 @@ alert("Selecciona al menos 2 mapas");
 return;
 }
 
+document.getElementById("resultadoMapas").innerHTML =
+"🎡 Sorteando mapas...";
+
+await new Promise(r => setTimeout(r, 2000));
+
 let copia = [...seleccionados];
 let resultados = [];
 
-// sorteo sin repetir
 while(copia.length > 0){
-
 let r = copia[Math.floor(Math.random() * copia.length)];
 resultados.push(r);
 copia = copia.filter(x => x !== r);
 }
 
-// SOLO TOP 2
 resultados = resultados.slice(0, 2);
 
 document.getElementById("resultadoMapas").innerHTML =
@@ -180,33 +206,6 @@ ${i === 0 ? "🥇" : "🥈"} Lugar ${i + 1}: ${m}
 
 };
 
-let seleccionados =
-[...document.querySelectorAll(".mapa")]
-.filter(x=>x.checked)
-.map(x=>x.value);
-
-if(seleccionados.length===0){
-alert("Selecciona mapas");
-return;
-}
-
-let copia=[...seleccionados];
-
-let resultados=[];
-
-while(copia.length>0){
-
-let r=copia[Math.floor(Math.random()*copia.length)];
-resultados.push(r);
-copia=copia.filter(x=>x!==r);
-}
-
-document.getElementById("resultadoMapas").innerHTML =
-resultados.map((m,i)=>`
-<div class="mapa-ganador">
-${i+1} 🏆 ${m}
-</div>
-`).join("");
-};
+/* ================= INIT ================= */
 
 renderJugadores();
