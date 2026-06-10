@@ -1,181 +1,383 @@
-let jugadores =
-JSON.parse(localStorage.getItem("rakionJugadores")) || [];
+/* ================= DATOS ================= */
 
-let historial =
-JSON.parse(localStorage.getItem("rakionHistorial")) || [];
+const STORAGE_JUGADORES = "rakionJugadores";
+const STORAGE_HISTORIAL = "rakionHistorial";
+
+let jugadores = JSON.parse(localStorage.getItem(STORAGE_JUGADORES)) || [];
+let historial = JSON.parse(localStorage.getItem(STORAGE_HISTORIAL)) || [];
+
+/* Convierte jugadores antiguos tipo texto a objeto */
+jugadores = jugadores.map(j => {
+  if (typeof j === "string") {
+    return {
+      nombre: j,
+      activo: false,
+      bombo: ""
+    };
+  }
+
+  return {
+    nombre: j.nombre || "",
+    activo: Boolean(j.activo),
+    bombo: j.bombo || ""
+  };
+}).filter(j => j.nombre.trim() !== "");
+
+/* ================= ELEMENTOS ================= */
 
 const listaJugadores = document.getElementById("listaJugadores");
 const equipoA = document.getElementById("equipoA");
 const equipoB = document.getElementById("equipoB");
 const ruleta = document.getElementById("ruleta");
+const nuevoJugador = document.getElementById("nuevoJugador");
+const btnAgregar = document.getElementById("btnAgregar");
+const resultadoMapas = document.getElementById("resultadoMapas");
+const historialDiv = document.getElementById("historial");
 
 /* ================= GUARDAR ================= */
 
-function guardar(){
-localStorage.setItem("rakionJugadores", JSON.stringify(jugadores));
-localStorage.setItem("rakionHistorial", JSON.stringify(historial));
+function guardar() {
+  localStorage.setItem(STORAGE_JUGADORES, JSON.stringify(jugadores));
+  localStorage.setItem(STORAGE_HISTORIAL, JSON.stringify(historial));
 }
 
-/* ================= JUGADORES ================= */
+/* ================= UTILIDADES ================= */
 
-function renderJugadores(){
-listaJugadores.innerHTML = "";
+function esperar(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
-jugadores.forEach(n=>{
-listaJugadores.innerHTML += `
-<div class="jugador-card" data-name="${n}">
-<input type="checkbox" class="activo">
-<span>${n}</span>
+function activarRuleta() {
+  ruleta.classList.add("ruleta-activa");
+}
 
-<select class="bombo">
-<option value="">Bombo</option>
-<option value="1">1</option>
-<option value="2">2</option>
-<option value="3">3</option>
-<option value="4">4</option>
-<option value="5">5</option>
-<option value="6">6</option>
-<option value="7">7</option>
-<option value="8">8</option>
-</select>
-</div>`;
+function detenerRuleta() {
+  ruleta.classList.remove("ruleta-activa");
+}
+
+function mezclar(lista) {
+  const copia = [...lista];
+
+  for (let i = copia.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [copia[i], copia[j]] = [copia[j], copia[i]];
+  }
+
+  return copia;
+}
+
+/* ================= RENDER JUGADORES ================= */
+
+function renderJugadores() {
+  listaJugadores.innerHTML = "";
+
+  if (jugadores.length === 0) {
+    listaJugadores.innerHTML = `
+      <p class="ayuda">Todavía no agregaste jugadores.</p>
+    `;
+    return;
+  }
+
+  jugadores.forEach((jugador, index) => {
+    const div = document.createElement("div");
+    div.className = "jugador-card";
+    div.dataset.index = index;
+
+    div.innerHTML = `
+      <input type="checkbox" class="activo" ${jugador.activo ? "checked" : ""}>
+      <span>${jugador.nombre}</span>
+
+      <select class="bombo">
+        <option value="">Bombo</option>
+        <option value="1" ${jugador.bombo === "1" ? "selected" : ""}>Bombo 1</option>
+        <option value="2" ${jugador.bombo === "2" ? "selected" : ""}>Bombo 2</option>
+        <option value="3" ${jugador.bombo === "3" ? "selected" : ""}>Bombo 3</option>
+        <option value="4" ${jugador.bombo === "4" ? "selected" : ""}>Bombo 4</option>
+        <option value="5" ${jugador.bombo === "5" ? "selected" : ""}>Bombo 5</option>
+        <option value="6" ${jugador.bombo === "6" ? "selected" : ""}>Bombo 6</option>
+        <option value="7" ${jugador.bombo === "7" ? "selected" : ""}>Bombo 7</option>
+        <option value="8" ${jugador.bombo === "8" ? "selected" : ""}>Bombo 8</option>
+      </select>
+
+      <button class="btnEliminar">❌</button>
+    `;
+
+    listaJugadores.appendChild(div);
+  });
+
+  document.querySelectorAll(".jugador-card").forEach(card => {
+    const index = Number(card.dataset.index);
+
+    card.querySelector(".activo").addEventListener("change", e => {
+      jugadores[index].activo = e.target.checked;
+      guardar();
+    });
+
+    card.querySelector(".bombo").addEventListener("change", e => {
+      jugadores[index].bombo = e.target.value;
+      guardar();
+    });
+
+    card.querySelector(".btnEliminar").addEventListener("click", () => {
+      const confirmar = confirm(`¿Eliminar a ${jugadores[index].nombre}?`);
+
+      if (!confirmar) return;
+
+      jugadores.splice(index, 1);
+      guardar();
+      renderJugadores();
+    });
+  });
+}
+
+/* ================= AGREGAR JUGADOR ================= */
+
+function agregarJugador() {
+  const nombre = nuevoJugador.value.trim();
+
+  if (nombre === "") {
+    alert("Escribe el nombre del jugador");
+    return;
+  }
+
+  const existe = jugadores.some(j =>
+    j.nombre.toLowerCase() === nombre.toLowerCase()
+  );
+
+  if (existe) {
+    alert("Ese jugador ya existe");
+    return;
+  }
+
+  jugadores.push({
+    nombre,
+    activo: true,
+    bombo: ""
+  });
+
+  nuevoJugador.value = "";
+  guardar();
+  renderJugadores();
+}
+
+btnAgregar.addEventListener("click", agregarJugador);
+
+nuevoJugador.addEventListener("keydown", e => {
+  if (e.key === "Enter") {
+    agregarJugador();
+  }
 });
-}
 
-/* ================= RULETA EQUIPOS ================= */
+/* ================= ACCIONES JUGADORES ================= */
 
-function ruletaPro(lista){
-return new Promise(res=>{
-let i = 0;
-let intervalo = setInterval(()=>{
-
-ruleta.innerText =
-lista[Math.floor(Math.random()*lista.length)];
-
-i++;
-if(i > 25){
-clearInterval(intervalo);
-res(ruleta.innerText);
-}
-
-}, 80);
+document.getElementById("btnSeleccionarTodos").addEventListener("click", () => {
+  jugadores.forEach(j => j.activo = true);
+  guardar();
+  renderJugadores();
 });
+
+document.getElementById("btnLimpiarSeleccion").addEventListener("click", () => {
+  jugadores.forEach(j => j.activo = false);
+  guardar();
+  renderJugadores();
+});
+
+document.getElementById("btnBorrarJugadores").addEventListener("click", () => {
+  if (jugadores.length === 0) return;
+
+  const confirmar = confirm("¿Seguro que deseas borrar todos los jugadores?");
+
+  if (!confirmar) return;
+
+  jugadores = [];
+  guardar();
+  renderJugadores();
+});
+
+/* ================= RULETA ================= */
+
+function ruletaPro(lista, duracion = 2200) {
+  return new Promise(resolve => {
+    activarRuleta();
+
+    let ganador = "";
+    const inicio = Date.now();
+
+    const intervalo = setInterval(() => {
+      ganador = lista[Math.floor(Math.random() * lista.length)];
+      ruleta.innerText = ganador;
+
+      if (Date.now() - inicio >= duracion) {
+        clearInterval(intervalo);
+        detenerRuleta();
+        resolve(ganador);
+      }
+    }, 80);
+  });
 }
 
 /* ================= SORTEO EQUIPOS ================= */
 
-document.getElementById("btnSortear").onclick = async () => {
+document.getElementById("btnSortear").addEventListener("click", async () => {
+  equipoA.innerHTML = "";
+  equipoB.innerHTML = "";
+  resultadoMapas.innerHTML = "";
 
-equipoA.innerHTML = "";
-equipoB.innerHTML = "";
+  const seleccionados = jugadores.filter(j => j.activo);
 
-let bombos = {};
+  if (seleccionados.length < 2) {
+    alert("Selecciona al menos 2 jugadores");
+    return;
+  }
 
-document.querySelectorAll(".jugador-card").forEach(p=>{
+  const sinBombo = seleccionados.filter(j => !j.bombo);
 
-let activo = p.querySelector(".activo").checked;
-if(!activo) return;
+  if (sinBombo.length > 0) {
+    alert("Todos los jugadores seleccionados deben tener un bombo");
+    return;
+  }
 
-let nombre = p.dataset.name;
-let bombo = p.querySelector(".bombo").value;
+  const bombos = {};
 
-if(!bombo) return;
+  seleccionados.forEach(j => {
+    if (!bombos[j.bombo]) bombos[j.bombo] = [];
+    bombos[j.bombo].push(j.nombre);
+  });
 
-if(!bombos[bombo]) bombos[bombo] = [];
+  const numerosBombos = Object.keys(bombos).sort((a, b) => Number(a) - Number(b));
 
-bombos[bombo].push(nombre);
+  for (const b of numerosBombos) {
+    if (bombos[b].length !== 2) {
+      alert(`El bombo ${b} tiene ${bombos[b].length} jugador(es). Cada bombo debe tener EXACTAMENTE 2 jugadores.`);
+      return;
+    }
+  }
+
+  const rojo = [];
+  const azul = [];
+
+  ruleta.innerText = "🎡 Iniciando sorteo...";
+  await esperar(700);
+
+  for (const b of numerosBombos) {
+    ruleta.innerText = `🎡 Bombo ${b}`;
+    await esperar(800);
+
+    const grupo = mezclar(bombos[b]);
+    const ganador = await ruletaPro(grupo);
+    const perdedor = grupo.find(nombre => nombre !== ganador);
+
+    const liRojo = document.createElement("li");
+    liRojo.textContent = ganador;
+    equipoA.appendChild(liRojo);
+
+    const liAzul = document.createElement("li");
+    liAzul.textContent = perdedor;
+    equipoB.appendChild(liAzul);
+
+    rojo.push(ganador);
+    azul.push(perdedor);
+
+    await esperar(650);
+  }
+
+  historial.unshift({
+    fecha: new Date().toLocaleString("es-PE"),
+    rojo,
+    azul
+  });
+
+  historial = historial.slice(0, 10);
+
+  guardar();
+  renderHistorial();
+
+  ruleta.innerText = "✅ Sorteo terminado";
 });
 
-for(let b in bombos){
+/* ================= LIMPIAR EQUIPOS ================= */
 
-if(bombos[b].length !== 2){
-alert("Cada bombo debe tener EXACTAMENTE 2 jugadores");
-return;
-}
-
-ruleta.innerText = "🎡 Bombo " + b;
-await new Promise(r => setTimeout(r, 800));
-
-let grupo = bombos[b];
-
-let ganador = await ruletaPro(grupo);
-let perdedor = grupo.find(x => x !== ganador);
-
-/* SOLO efecto simple (sin texto en cada jugador) */
-let liA = document.createElement("li");
-liA.textContent = ganador;
-equipoA.appendChild(liA);
-
-let liB = document.createElement("li");
-liB.textContent = perdedor;
-equipoB.appendChild(liB);
-
-await new Promise(r => setTimeout(r, 900));
-}
-
-historial.push({
-fecha: new Date().toLocaleString(),
-A: [],
-B: []
+document.getElementById("btnLimpiarEquipos").addEventListener("click", () => {
+  equipoA.innerHTML = "";
+  equipoB.innerHTML = "";
+  ruleta.innerText = "Listo";
 });
 
-guardar();
-};
+/* ================= SORTEO DE MAPAS ================= */
 
-/* ================= MAPAS PRO (ARREGLADO VISUAL) ================= */
+document.getElementById("btnSortearMapa").addEventListener("click", async () => {
+  const mapas = [...document.querySelectorAll(".mapa")]
+    .filter(x => x.checked)
+    .map(x => x.value);
 
-document.getElementById("btnSortearMapa").onclick = async () => {
+  if (mapas.length < 2) {
+    alert("Selecciona al menos 2 mapas");
+    return;
+  }
 
-let mapas =
-[...document.querySelectorAll(".mapa")]
-.filter(x => x.checked)
-.map(x => x.value);
+  resultadoMapas.innerHTML = "";
+  let copia = mezclar(mapas);
 
-if(mapas.length < 2){
-alert("Selecciona al menos 2 mapas");
-return;
+  ruleta.innerText = "🎲 Sorteando 1er mapa...";
+  await esperar(600);
+
+  const ganador1 = await ruletaPro(copia, 3000);
+  copia = copia.filter(mapa => mapa !== ganador1);
+
+  resultadoMapas.innerHTML = `
+    <div class="mapa-ganador">🥇 1ER LUGAR: <strong>${ganador1}</strong></div>
+  `;
+
+  ruleta.innerText = "🎲 Sorteando 2do mapa...";
+  await esperar(800);
+
+  const ganador2 = await ruletaPro(copia, 3000);
+
+  resultadoMapas.innerHTML += `
+    <div class="mapa-ganador">🥈 2DO LUGAR: <strong>${ganador2}</strong></div>
+  `;
+
+  ruleta.innerText = "✅ Mapas sorteados";
+});
+
+/* ================= HISTORIAL ================= */
+
+function renderHistorial() {
+  historialDiv.innerHTML = "";
+
+  if (historial.length === 0) {
+    historialDiv.innerHTML = `<p class="ayuda">Todavía no hay sorteos guardados.</p>`;
+    return;
+  }
+
+  historial.forEach(item => {
+    const div = document.createElement("div");
+    div.className = "historial-item";
+
+    div.innerHTML = `
+      <small>${item.fecha}</small><br>
+      🟥 <strong>Rojo:</strong> ${item.rojo.join(", ")}<br>
+      🟦 <strong>Azul:</strong> ${item.azul.join(", ")}
+    `;
+
+    historialDiv.appendChild(div);
+  });
 }
 
-let copia = [...mapas];
+document.getElementById("btnBorrarHistorial").addEventListener("click", () => {
+  if (historial.length === 0) return;
 
-/* ================= 1ER LUGAR (3s visual) ================= */
+  const confirmar = confirm("¿Seguro que deseas borrar el historial?");
 
-let ganador1 = "";
+  if (!confirmar) return;
 
-let t1 = setInterval(()=>{
-ruleta.innerText =
-copia[Math.floor(Math.random()*copia.length)];
-}, 100);
-
-await new Promise(r => setTimeout(r, 3000));
-clearInterval(t1);
-
-ganador1 = ruleta.innerText;
-
-/* eliminar ganador */
-copia = copia.filter(x => x !== ganador1);
-
-document.getElementById("resultadoMapas").innerHTML =
-`🥇 1ER LUGAR: ${ganador1}`;
-
-/* ================= 2DO LUGAR (3s visual) ================= */
-
-let t2 = setInterval(()=>{
-ruleta.innerText =
-copia[Math.floor(Math.random()*copia.length)];
-}, 100);
-
-await new Promise(r => setTimeout(r, 3000));
-clearInterval(t2);
-
-let ganador2 = ruleta.innerText;
-
-document.getElementById("resultadoMapas").innerHTML +=
-`<br>🥈 2DO LUGAR: ${ganador2}`;
-
-};
+  historial = [];
+  guardar();
+  renderHistorial();
+});
 
 /* ================= INIT ================= */
 
+guardar();
 renderJugadores();
-renderJugadores();
+renderHistorial();
