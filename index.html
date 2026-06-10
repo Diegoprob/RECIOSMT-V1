@@ -11,7 +11,7 @@
 
 <header>
   <h1>⚔️ Rakion MT Sorteador</h1>
-  <p>Sorteo de mapas y equipos por bombos</p>
+  <p>Sorteo de mapas, equipos por bombos y registro de victorias</p>
 </header>
 
 <main class="container">
@@ -28,8 +28,6 @@
     </div>
 
     <button id="btnSortearMapa">🎲 Sortear Mapas</button>
-
-    <div id="resultadoMapas" class="resultado"></div>
   </section>
 
   <!-- ================= JUGADORES ================= -->
@@ -66,6 +64,14 @@
     <button id="btnLimpiarEquipos" class="btn-secundario">🧹 Limpiar equipos</button>
   </section>
 
+  <!-- ================= RESULTADO DE MAPAS ARRIBA DE LOS EQUIPOS ================= -->
+  <section class="card resultado-mapas-card">
+    <h2>🗺️ Resultado de Mapas</h2>
+    <div id="resultadoMapas" class="resultado">
+      Todavía no se sortearon mapas.
+    </div>
+  </section>
+
   <!-- ================= EQUIPOS ================= -->
   <section class="card equipos">
     <div class="equipo rojo">
@@ -79,13 +85,50 @@
     </div>
   </section>
 
+  <!-- ================= GANADOR DEL VERSUS ================= -->
+  <section class="card">
+    <h2>🏆 Registrar ganador del versus</h2>
+
+    <p class="ayuda">
+      Después de jugar el versus, marca qué equipo ganó. Se sumará 1 victoria a cada jugador del equipo ganador.
+    </p>
+
+    <div id="partidaActual" class="partida-actual">
+      No hay sorteo pendiente por registrar.
+    </div>
+
+    <div class="ganador-botones">
+      <button id="btnGanoRojo" class="btn-rojo">🟥 Ganó ROJO</button>
+      <button id="btnGanoAzul" class="btn-azul">🟦 Ganó AZUL</button>
+    </div>
+  </section>
+
+  <!-- ================= RANKING ================= -->
+  <section class="card">
+    <h2>📊 Ranking de jugadores</h2>
+
+    <div class="acciones">
+      <button id="btnBorrarRegistros" class="btn-peligro">🗑️ Borrar registros de victorias</button>
+    </div>
+
+    <div id="rankingJugadores"></div>
+  </section>
+
   <!-- ================= HISTORIAL ================= -->
   <section class="card">
-    <h2>📜 Historial</h2>
+    <h2>📜 Historial de sorteos</h2>
+
     <div class="acciones">
-      <button id="btnBorrarHistorial" class="btn-peligro">🗑️ Borrar historial</button>
+      <button id="btnBorrarHistorial" class="btn-peligro">🗑️ Borrar historial de sorteos</button>
     </div>
+
     <div id="historial"></div>
+  </section>
+
+  <!-- ================= HISTORIAL VERSUS ================= -->
+  <section class="card">
+    <h2>⚔️ Historial de versus jugados</h2>
+    <div id="historialVersus"></div>
   </section>
 
 </main>
