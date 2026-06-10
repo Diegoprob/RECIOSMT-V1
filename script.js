@@ -2,9 +2,13 @@
 
 const STORAGE_JUGADORES = "rakionJugadores";
 const STORAGE_HISTORIAL = "rakionHistorial";
+const STORAGE_REGISTROS = "rakionRegistrosVersus";
+const STORAGE_PARTIDA_ACTUAL = "rakionPartidaActual";
 
 let jugadores = JSON.parse(localStorage.getItem(STORAGE_JUGADORES)) || [];
 let historial = JSON.parse(localStorage.getItem(STORAGE_HISTORIAL)) || [];
+let registrosVersus = JSON.parse(localStorage.getItem(STORAGE_REGISTROS)) || [];
+let partidaActual = JSON.parse(localStorage.getItem(STORAGE_PARTIDA_ACTUAL)) || null;
 
 /* Convierte jugadores antiguos tipo texto a objeto */
 jugadores = jugadores.map(j => {
@@ -23,6 +27,17 @@ jugadores = jugadores.map(j => {
   };
 }).filter(j => j.nombre.trim() !== "");
 
+/* Convierte historiales antiguos */
+historial = historial.map(h => {
+  return {
+    id: h.id || Date.now() + Math.random(),
+    fecha: h.fecha || "",
+    rojo: h.rojo || h.A || [],
+    azul: h.azul || h.B || [],
+    ganador: h.ganador || null
+  };
+});
+
 /* ================= ELEMENTOS ================= */
 
 const listaJugadores = document.getElementById("listaJugadores");
@@ -33,12 +48,19 @@ const nuevoJugador = document.getElementById("nuevoJugador");
 const btnAgregar = document.getElementById("btnAgregar");
 const resultadoMapas = document.getElementById("resultadoMapas");
 const historialDiv = document.getElementById("historial");
+const partidaActualDiv = document.getElementById("partidaActual");
+const rankingJugadoresDiv = document.getElementById("rankingJugadores");
+const historialVersusDiv = document.getElementById("historialVersus");
+const btnGanoRojo = document.getElementById("btnGanoRojo");
+const btnGanoAzul = document.getElementById("btnGanoAzul");
 
 /* ================= GUARDAR ================= */
 
 function guardar() {
   localStorage.setItem(STORAGE_JUGADORES, JSON.stringify(jugadores));
   localStorage.setItem(STORAGE_HISTORIAL, JSON.stringify(historial));
+  localStorage.setItem(STORAGE_REGISTROS, JSON.stringify(registrosVersus));
+  localStorage.setItem(STORAGE_PARTIDA_ACTUAL, JSON.stringify(partidaActual));
 }
 
 /* ================= UTILIDADES ================= */
@@ -64,6 +86,11 @@ function mezclar(lista) {
   }
 
   return copia;
+}
+
+function porcentaje(victorias, partidas) {
+  if (partidas === 0) return "0%";
+  return Math.round((victorias / partidas) * 100) + "%";
 }
 
 /* ================= RENDER JUGADORES ================= */
@@ -126,6 +153,7 @@ function renderJugadores() {
       jugadores.splice(index, 1);
       guardar();
       renderJugadores();
+      renderRanking();
     });
   });
 }
@@ -158,6 +186,7 @@ function agregarJugador() {
   nuevoJugador.value = "";
   guardar();
   renderJugadores();
+  renderRanking();
 }
 
 btnAgregar.addEventListener("click", agregarJugador);
@@ -192,6 +221,7 @@ document.getElementById("btnBorrarJugadores").addEventListener("click", () => {
   jugadores = [];
   guardar();
   renderJugadores();
+  renderRanking();
 });
 
 /* ================= RULETA ================= */
@@ -221,7 +251,6 @@ function ruletaPro(lista, duracion = 2200) {
 document.getElementById("btnSortear").addEventListener("click", async () => {
   equipoA.innerHTML = "";
   equipoB.innerHTML = "";
-  resultadoMapas.innerHTML = "";
 
   const seleccionados = jugadores.filter(j => j.activo);
 
@@ -255,6 +284,7 @@ document.getElementById("btnSortear").addEventListener("click", async () => {
 
   const rojo = [];
   const azul = [];
+  const sorteoId = Date.now();
 
   ruleta.innerText = "🎡 Iniciando sorteo...";
   await esperar(700);
@@ -281,15 +311,25 @@ document.getElementById("btnSortear").addEventListener("click", async () => {
     await esperar(650);
   }
 
-  historial.unshift({
-    fecha: new Date().toLocaleString("es-PE"),
+  partidaActual = {
+    id: sorteoId,
+    fechaSorteo: new Date().toLocaleString("es-PE"),
     rojo,
     azul
+  };
+
+  historial.unshift({
+    id: sorteoId,
+    fecha: partidaActual.fechaSorteo,
+    rojo,
+    azul,
+    ganador: null
   });
 
-  historial = historial.slice(0, 10);
+  historial = historial.slice(0, 20);
 
   guardar();
+  renderPartidaActual();
   renderHistorial();
 
   ruleta.innerText = "✅ Sorteo terminado";
@@ -340,7 +380,185 @@ document.getElementById("btnSortearMapa").addEventListener("click", async () => 
   ruleta.innerText = "✅ Mapas sorteados";
 });
 
-/* ================= HISTORIAL ================= */
+/* ================= PARTIDA ACTUAL ================= */
+
+function renderPartidaActual() {
+  if (!partidaActual) {
+    partidaActualDiv.innerHTML = "No hay sorteo pendiente por registrar.";
+    btnGanoRojo.disabled = true;
+    btnGanoAzul.disabled = true;
+    return;
+  }
+
+  partidaActualDiv.innerHTML = `
+    <strong>Sorteo:</strong> ${partidaActual.fechaSorteo}<br>
+    🟥 <strong>Rojo:</strong> ${partidaActual.rojo.join(", ")}<br>
+    🟦 <strong>Azul:</strong> ${partidaActual.azul.join(", ")}
+  `;
+
+  btnGanoRojo.disabled = false;
+  btnGanoAzul.disabled = false;
+}
+
+function registrarGanador(equipoGanador) {
+  if (!partidaActual) {
+    alert("Primero debes realizar un sorteo.");
+    return;
+  }
+
+  const textoEquipo = equipoGanador === "rojo" ? "ROJO" : "AZUL";
+  const confirmar = confirm(`¿Confirmas que ganó el equipo ${textoEquipo}?`);
+
+  if (!confirmar) return;
+
+  const ganadores = equipoGanador === "rojo" ? partidaActual.rojo : partidaActual.azul;
+  const perdedores = equipoGanador === "rojo" ? partidaActual.azul : partidaActual.rojo;
+
+  registrosVersus.unshift({
+    id: Date.now(),
+    sorteoId: partidaActual.id,
+    fecha: new Date().toLocaleString("es-PE"),
+    ganador: equipoGanador,
+    ganadores,
+    perdedores,
+    rojo: partidaActual.rojo,
+    azul: partidaActual.azul
+  });
+
+  registrosVersus = registrosVersus.slice(0, 50);
+
+  const sorteo = historial.find(h => h.id === partidaActual.id);
+
+  if (sorteo) {
+    sorteo.ganador = equipoGanador;
+  }
+
+  partidaActual = null;
+
+  guardar();
+  renderPartidaActual();
+  renderRanking();
+  renderHistorial();
+  renderHistorialVersus();
+
+  alert(`Victoria registrada para: ${ganadores.join(", ")}`);
+}
+
+btnGanoRojo.addEventListener("click", () => registrarGanador("rojo"));
+btnGanoAzul.addEventListener("click", () => registrarGanador("azul"));
+
+/* ================= RANKING ================= */
+
+function calcularEstadisticas() {
+  const stats = {};
+
+  jugadores.forEach(j => {
+    stats[j.nombre] = {
+      jugador: j.nombre,
+      partidas: 0,
+      victorias: 0,
+      derrotas: 0
+    };
+  });
+
+  registrosVersus.forEach(registro => {
+    registro.ganadores.forEach(nombre => {
+      if (!stats[nombre]) {
+        stats[nombre] = {
+          jugador: nombre,
+          partidas: 0,
+          victorias: 0,
+          derrotas: 0
+        };
+      }
+
+      stats[nombre].partidas++;
+      stats[nombre].victorias++;
+    });
+
+    registro.perdedores.forEach(nombre => {
+      if (!stats[nombre]) {
+        stats[nombre] = {
+          jugador: nombre,
+          partidas: 0,
+          victorias: 0,
+          derrotas: 0
+        };
+      }
+
+      stats[nombre].partidas++;
+      stats[nombre].derrotas++;
+    });
+  });
+
+  return Object.values(stats).sort((a, b) => {
+    if (b.victorias !== a.victorias) return b.victorias - a.victorias;
+    if (b.partidas !== a.partidas) return b.partidas - a.partidas;
+    return a.jugador.localeCompare(b.jugador);
+  });
+}
+
+function renderRanking() {
+  const stats = calcularEstadisticas();
+
+  if (stats.length === 0) {
+    rankingJugadoresDiv.innerHTML = `<p class="ayuda">Todavía no hay jugadores registrados.</p>`;
+    return;
+  }
+
+  let filas = "";
+
+  stats.forEach((s, index) => {
+    filas += `
+      <tr>
+        <td>${index + 1}. ${s.jugador}</td>
+        <td>${s.partidas}</td>
+        <td>${s.victorias}</td>
+        <td>${s.derrotas}</td>
+        <td>${porcentaje(s.victorias, s.partidas)}</td>
+      </tr>
+    `;
+  });
+
+  rankingJugadoresDiv.innerHTML = `
+    <div class="tabla-contenedor">
+      <table>
+        <thead>
+          <tr>
+            <th>Jugador</th>
+            <th>Partidas</th>
+            <th>Victorias</th>
+            <th>Derrotas</th>
+            <th>% Victoria</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+document.getElementById("btnBorrarRegistros").addEventListener("click", () => {
+  if (registrosVersus.length === 0) return;
+
+  const confirmar = confirm("¿Seguro que deseas borrar todos los registros de victorias?");
+
+  if (!confirmar) return;
+
+  registrosVersus = [];
+  historial.forEach(h => h.ganador = null);
+  partidaActual = null;
+
+  guardar();
+  renderPartidaActual();
+  renderRanking();
+  renderHistorial();
+  renderHistorialVersus();
+});
+
+/* ================= HISTORIAL SORTEOS ================= */
 
 function renderHistorial() {
   historialDiv.innerHTML = "";
@@ -354,10 +572,15 @@ function renderHistorial() {
     const div = document.createElement("div");
     div.className = "historial-item";
 
+    let ganadorTexto = "Pendiente de registrar";
+    if (item.ganador === "rojo") ganadorTexto = `<span class="ganador-rojo">Ganó ROJO</span>`;
+    if (item.ganador === "azul") ganadorTexto = `<span class="ganador-azul">Ganó AZUL</span>`;
+
     div.innerHTML = `
       <small>${item.fecha}</small><br>
       🟥 <strong>Rojo:</strong> ${item.rojo.join(", ")}<br>
-      🟦 <strong>Azul:</strong> ${item.azul.join(", ")}
+      🟦 <strong>Azul:</strong> ${item.azul.join(", ")}<br>
+      🏆 <strong>Resultado:</strong> ${ganadorTexto}
     `;
 
     historialDiv.appendChild(div);
@@ -367,17 +590,51 @@ function renderHistorial() {
 document.getElementById("btnBorrarHistorial").addEventListener("click", () => {
   if (historial.length === 0) return;
 
-  const confirmar = confirm("¿Seguro que deseas borrar el historial?");
+  const confirmar = confirm("¿Seguro que deseas borrar el historial de sorteos? No borra el ranking de victorias.");
 
   if (!confirmar) return;
 
   historial = [];
+  partidaActual = null;
+
   guardar();
+  renderPartidaActual();
   renderHistorial();
 });
+
+/* ================= HISTORIAL VERSUS ================= */
+
+function renderHistorialVersus() {
+  historialVersusDiv.innerHTML = "";
+
+  if (registrosVersus.length === 0) {
+    historialVersusDiv.innerHTML = `<p class="ayuda">Todavía no hay versus registrados.</p>`;
+    return;
+  }
+
+  registrosVersus.forEach(registro => {
+    const div = document.createElement("div");
+    div.className = "historial-item";
+
+    const clase = registro.ganador === "rojo" ? "ganador-rojo" : "ganador-azul";
+    const equipo = registro.ganador === "rojo" ? "ROJO" : "AZUL";
+
+    div.innerHTML = `
+      <small>${registro.fecha}</small><br>
+      🏆 <strong>Ganó:</strong> <span class="${clase}">${equipo}</span><br>
+      ✅ <strong>Ganadores:</strong> ${registro.ganadores.join(", ")}<br>
+      ❌ <strong>Perdedores:</strong> ${registro.perdedores.join(", ")}
+    `;
+
+    historialVersusDiv.appendChild(div);
+  });
+}
 
 /* ================= INIT ================= */
 
 guardar();
 renderJugadores();
+renderPartidaActual();
+renderRanking();
 renderHistorial();
+renderHistorialVersus();
