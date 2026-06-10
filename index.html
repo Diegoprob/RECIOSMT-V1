@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Rakion MT V2</title>
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header>
+<h1>⚔️ Rakion MT Sorteador V2</h1>
+</header>
+
+<div class="container">
+
+<!-- MAPAS -->
+<div class="card">
+<h2>🗺️ Mapas</h2>
+
+<label><input type="checkbox" class="mapa" value="AnotherTomb"> AnotherTomb</label><br>
+<label><input type="checkbox" class="mapa" value="Lost Temple"> Lost Temple</label><br>
+<label><input type="checkbox" class="mapa" value="Templo Serpiente"> Templo Serpiente</label><br>
+<label><input type="checkbox" class="mapa" value="Tumba del Rey"> Tumba del Rey</label><br>
+
+<button id="btnSortearMapa">🎲 Sortear Mapas</button>
+
+<div id="resultadoMapas"></div>
+</div>
+
+<!-- JUGADORES -->
+<div class="card">
+<h2>👥 Jugadores</h2>
+
+<div class="agregar-jugador">
+<input id="nuevoJugador" placeholder="Nombre">
+<button id="btnAgregar">Agregar</button>
+</div>
+
+<div id="listaJugadores"></div>
+</div>
+
+<!-- PARTICIPANTES -->
+<div class="card">
+<h2>🎯 Participantes y Bombos</h2>
+<div id="participantes"></div>
+</div>
+
+<!-- RULETA -->
+<div class="card">
+<h2>🎡 Sorteo</h2>
+
+<div class="ruleta-container">
+<div id="ruleta">Listo</div>
+</div>
+
+<button id="btnSortear">Iniciar Sorteo</button>
+</div>
+
+<!-- EQUIPOS -->
+<div class="card equipos">
+<div class="equipo">
+<h3>🟦 Equipo Azul</h3>
+<ul id="equipoA"></ul>
+</div>
+
+<div class="equipo">
+<h3>🟥 Equipo Rojo</h3>
+<ul id="equipoB"></ul>
+</div>
+</div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
