@@ -2,53 +2,50 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Rakion MT V2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rakion MT Sorteador V4</title>
+
 <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
 
 <header>
-<h1>⚔️ Rakion MT Sorteador V2</h1>
+<h1>⚔️ Rakion MT Sorteador</h1>
 </header>
 
 <div class="container">
 
-<!-- MAPAS -->
+<!-- ================= MAPAS ================= -->
 <div class="card">
-<h2>🗺️ Mapas</h2>
+<h2>🗺️ Sorteo de Mapas</h2>
 
 <label><input type="checkbox" class="mapa" value="AnotherTomb"> AnotherTomb</label><br>
 <label><input type="checkbox" class="mapa" value="Lost Temple"> Lost Temple</label><br>
 <label><input type="checkbox" class="mapa" value="Templo Serpiente"> Templo Serpiente</label><br>
 <label><input type="checkbox" class="mapa" value="Tumba del Rey"> Tumba del Rey</label><br>
 
+<br>
 <button id="btnSortearMapa">🎲 Sortear Mapas</button>
 
-<div id="resultadoMapas"></div>
+<div id="resultadoMapas" style="margin-top:10px;"></div>
 </div>
 
-<!-- JUGADORES -->
+<!-- ================= JUGADORES ================= -->
 <div class="card">
 <h2>👥 Jugadores</h2>
 
 <div class="agregar-jugador">
-<input id="nuevoJugador" placeholder="Nombre">
+<input id="nuevoJugador" type="text" placeholder="Nombre del jugador">
 <button id="btnAgregar">Agregar</button>
 </div>
 
 <div id="listaJugadores"></div>
 </div>
 
-<!-- PARTICIPANTES -->
+<!-- ================= RULETA ================= -->
 <div class="card">
-<h2>🎯 Participantes y Bombos</h2>
-<div id="participantes"></div>
-</div>
-
-<!-- RULETA -->
-<div class="card">
-<h2>🎡 Sorteo</h2>
+<h2>🎡 Ruleta de Sorteo</h2>
 
 <div class="ruleta-container">
 <div id="ruleta">Listo</div>
@@ -57,17 +54,21 @@
 <button id="btnSortear">Iniciar Sorteo</button>
 </div>
 
-<!-- EQUIPOS -->
+<!-- ================= EQUIPOS ================= -->
 <div class="card equipos">
+
+<!-- 🟥 ROJO (1ERO) -->
 <div class="equipo">
-<h3>🟦 Equipo Azul</h3>
+<h3>🟥 ROJO (1ERO)</h3>
 <ul id="equipoA"></ul>
 </div>
 
+<!-- 🟦 AZUL (2DO) -->
 <div class="equipo">
-<h3>🟥 Equipo Rojo</h3>
+<h3>🟦 AZUL (2DO)</h3>
 <ul id="equipoB"></ul>
 </div>
+
 </div>
 
 </div>
