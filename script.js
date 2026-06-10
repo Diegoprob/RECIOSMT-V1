@@ -149,6 +149,39 @@ document.getElementById("btnSortearMapa").onclick = () => {
 
 let seleccionados =
 [...document.querySelectorAll(".mapa")]
+.filter(x => x.checked)
+.map(x => x.value);
+
+if(seleccionados.length < 2){
+alert("Selecciona al menos 2 mapas");
+return;
+}
+
+let copia = [...seleccionados];
+let resultados = [];
+
+// sorteo sin repetir
+while(copia.length > 0){
+
+let r = copia[Math.floor(Math.random() * copia.length)];
+resultados.push(r);
+copia = copia.filter(x => x !== r);
+}
+
+// SOLO TOP 2
+resultados = resultados.slice(0, 2);
+
+document.getElementById("resultadoMapas").innerHTML =
+resultados.map((m, i) => `
+<div class="mapa-ganador">
+${i === 0 ? "🥇" : "🥈"} Lugar ${i + 1}: ${m}
+</div>
+`).join("");
+
+};
+
+let seleccionados =
+[...document.querySelectorAll(".mapa")]
 .filter(x=>x.checked)
 .map(x=>x.value);
 
