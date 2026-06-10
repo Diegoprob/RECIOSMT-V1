@@ -21,7 +21,7 @@ localStorage.setItem("rakionHistorial", JSON.stringify(historial));
 function renderJugadores(){
 listaJugadores.innerHTML = "";
 
-jugadores.forEach((n,i)=>{
+jugadores.forEach(n=>{
 listaJugadores.innerHTML += `
 <div class="jugador-card" data-name="${n}">
 <input type="checkbox" class="activo">
@@ -42,30 +42,52 @@ listaJugadores.innerHTML += `
 });
 }
 
-/* ================= ANIMACIÓN RULETA PRO ================= */
+/* ================= RULETA PRO ================= */
 
-function ruletaPro(opciones){
+function ruletaPro(lista){
 return new Promise(res=>{
 
-let velocidad = 50;
-let tiempo = 0;
-let max = 30;
+let i = 0;
+let velocidad = 60;
 
 let intervalo = setInterval(()=>{
 
 ruleta.innerText =
-opciones[Math.floor(Math.random()*opciones.length)];
+lista[Math.floor(Math.random() * lista.length)];
 
-tiempo++;
+i++;
 
-if(tiempo > 10) velocidad += 20;
+/* efecto emoción (acelera y luego desacelera) */
+if(i > 10) velocidad += 20;
 
-if(tiempo > max){
+if(i > 30){
 clearInterval(intervalo);
 res(ruleta.innerText);
 }
 
 }, velocidad);
+
+});
+}
+
+/* ================= RESULTADO EN VIVO ================= */
+
+function mostrarResultado(ganador, perdedor){
+return new Promise(res=>{
+
+let liA = document.createElement("li");
+liA.textContent = "🥇 ROJO (1ERO) - " + ganador;
+liA.style.color = "#ff3b3b";
+liA.style.fontWeight = "bold";
+equipoA.appendChild(liA);
+
+let liB = document.createElement("li");
+liB.textContent = "🥈 AZUL (2DO) - " + perdedor;
+liB.style.color = "#3a86ff";
+equipoB.appendChild(liB);
+
+/* pausa emocional */
+setTimeout(res, 900);
 
 });
 }
@@ -77,9 +99,12 @@ document.getElementById("btnSortear").onclick = async () => {
 equipoA.innerHTML = "";
 equipoB.innerHTML = "";
 
+document.querySelectorAll(".ultimo-sorteado")
+.forEach(x => x.classList.remove("ultimo-sorteado"));
+
 let bombos = {};
 
-/* recoger jugadores activos */
+/* recolectar jugadores */
 document.querySelectorAll(".jugador-card").forEach(p=>{
 
 let activo = p.querySelector(".activo").checked;
@@ -106,7 +131,7 @@ return;
 let A = [];
 let B = [];
 
-/* sorteo animado por bombo */
+/* sorteo por bombos */
 for(let b of Object.keys(bombos)){
 
 ruleta.innerText = "🎡 Bombo " + b;
@@ -117,14 +142,15 @@ let grupo = bombos[b];
 let ganador = await ruletaPro(grupo);
 let perdedor = grupo.find(x => x !== ganador);
 
-/* animación salida */
 await mostrarResultado(ganador, perdedor);
 
 A.push(ganador);
 B.push(perdedor);
+
+await new Promise(r => setTimeout(r, 900));
 }
 
-/* guardar historial */
+/* historial */
 historial.push({
 fecha: new Date().toLocaleString(),
 A, B
@@ -134,35 +160,14 @@ guardar();
 
 };
 
-/* ================= RESULTADO EN VIVO ================= */
-
-function mostrarResultado(ganador, perdedor){
-return new Promise(res=>{
-
-let liA = document.createElement("li");
-liA.textContent = "🏆 " + ganador;
-liA.style.color = "#00ffcc";
-equipoA.appendChild(liA);
-
-let liB = document.createElement("li");
-liB.textContent = "❌ " + perdedor;
-liB.style.color = "#ff4d4d";
-equipoB.appendChild(liB);
-
-/* efecto de pausa emocional */
-setTimeout(res, 900);
-
-});
-}
-
 /* ================= MAPAS PRO ================= */
 
 document.getElementById("btnSortearMapa").onclick = async () => {
 
 let mapas =
 [...document.querySelectorAll(".mapa")]
-.filter(x=>x.checked)
-.map(x=>x.value);
+.filter(x => x.checked)
+.map(x => x.value);
 
 if(mapas.length < 2){
 alert("Selecciona al menos 2 mapas");
@@ -170,25 +175,25 @@ return;
 }
 
 document.getElementById("resultadoMapas").innerHTML =
-"🎡 Iniciando sorteo de mapas...";
+"🎡 Sorteando mapas...";
 
 await new Promise(r => setTimeout(r, 1500));
 
 let copia = [...mapas];
 let resultados = [];
 
-/* animación eliminación */
+/* eliminación progresiva */
 while(copia.length){
 
-let r = copia[Math.floor(Math.random()*copia.length)];
+let r = copia[Math.floor(Math.random() * copia.length)];
 resultados.push(r);
-copia = copia.filter(x=>x!==r);
+copia = copia.filter(x => x !== r);
 
-await new Promise(r=>setTimeout(r, 600));
+await new Promise(r => setTimeout(r, 600));
 }
 
-/* mostrar solo top 3 */
-resultados = resultados.slice(0,3);
+/* TOP 3 */
+resultados = resultados.slice(0, 3);
 
 document.getElementById("resultadoMapas").innerHTML =
 resultados.map((m,i)=>`
