@@ -116,6 +116,11 @@ button:disabled {
   background: #3a86ff;
 }
 
+.btn-empate {
+  background: #ffd166;
+  color: #111;
+}
+
 /* ================= INPUT ================= */
 
 input[type="text"] {
@@ -246,10 +251,15 @@ input[type="text"] {
 #ruleta {
   font-size: 30px;
   font-weight: bold;
-  color: #ffd166;
+  color: #ffffff;
   text-align: center;
   padding: 15px;
   width: 100%;
+}
+
+#ruleta.texto-ganador {
+  color: #ff3b3b;
+  text-shadow: 0 0 16px rgba(255, 59, 59, 0.95);
 }
 
 .ruleta-activa {
@@ -339,7 +349,7 @@ input[type="text"] {
 
 .ganador-botones {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 10px;
 }
 
@@ -357,7 +367,7 @@ table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 12px;
-  min-width: 520px;
+  min-width: 620px;
 }
 
 th,
@@ -404,6 +414,11 @@ td:first-child {
 
 .ganador-azul {
   color: #7cb3ff;
+  font-weight: bold;
+}
+
+.ganador-empate {
+  color: #ffd166;
   font-weight: bold;
 }
 
