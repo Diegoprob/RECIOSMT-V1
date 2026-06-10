@@ -53,6 +53,7 @@ const rankingJugadoresDiv = document.getElementById("rankingJugadores");
 const historialVersusDiv = document.getElementById("historialVersus");
 const btnGanoRojo = document.getElementById("btnGanoRojo");
 const btnGanoAzul = document.getElementById("btnGanoAzul");
+const btnEmpate = document.getElementById("btnEmpate");
 
 /* ================= GUARDAR ================= */
 
@@ -69,7 +70,21 @@ function esperar(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function limpiarColorGanador() {
+  ruleta.classList.remove("texto-ganador");
+}
+
+function marcarColorGanador() {
+  ruleta.classList.add("texto-ganador");
+}
+
+function escribirRuletaNormal(texto) {
+  limpiarColorGanador();
+  ruleta.innerText = texto;
+}
+
 function activarRuleta() {
+  limpiarColorGanador();
   ruleta.classList.add("ruleta-activa");
 }
 
@@ -240,6 +255,7 @@ function ruletaPro(lista, duracion = 2200) {
       if (Date.now() - inicio >= duracion) {
         clearInterval(intervalo);
         detenerRuleta();
+        marcarColorGanador();
         resolve(ganador);
       }
     }, 80);
@@ -286,11 +302,11 @@ document.getElementById("btnSortear").addEventListener("click", async () => {
   const azul = [];
   const sorteoId = Date.now();
 
-  ruleta.innerText = "🎡 Iniciando sorteo...";
+  escribirRuletaNormal("🎡 Iniciando sorteo...");
   await esperar(700);
 
   for (const b of numerosBombos) {
-    ruleta.innerText = `🎡 Bombo ${b}`;
+    escribirRuletaNormal(`🎡 Bombo ${b}`);
     await esperar(800);
 
     const grupo = mezclar(bombos[b]);
@@ -332,7 +348,7 @@ document.getElementById("btnSortear").addEventListener("click", async () => {
   renderPartidaActual();
   renderHistorial();
 
-  ruleta.innerText = "✅ Sorteo terminado";
+  escribirRuletaNormal("✅ Sorteo terminado");
 });
 
 /* ================= LIMPIAR EQUIPOS ================= */
@@ -340,7 +356,7 @@ document.getElementById("btnSortear").addEventListener("click", async () => {
 document.getElementById("btnLimpiarEquipos").addEventListener("click", () => {
   equipoA.innerHTML = "";
   equipoB.innerHTML = "";
-  ruleta.innerText = "Listo";
+  escribirRuletaNormal("Listo");
 });
 
 /* ================= SORTEO DE MAPAS ================= */
@@ -358,7 +374,7 @@ document.getElementById("btnSortearMapa").addEventListener("click", async () => 
   resultadoMapas.innerHTML = "";
   let copia = mezclar(mapas);
 
-  ruleta.innerText = "🎲 Sorteando 1er mapa...";
+  escribirRuletaNormal("🎲 Sorteando 1er mapa...");
   await esperar(600);
 
   const ganador1 = await ruletaPro(copia, 3000);
@@ -368,7 +384,7 @@ document.getElementById("btnSortearMapa").addEventListener("click", async () => 
     <div class="mapa-ganador">🥇 1ER LUGAR: <strong>${ganador1}</strong></div>
   `;
 
-  ruleta.innerText = "🎲 Sorteando 2do mapa...";
+  escribirRuletaNormal("🎲 Sorteando 2do mapa...");
   await esperar(800);
 
   const ganador2 = await ruletaPro(copia, 3000);
@@ -377,7 +393,7 @@ document.getElementById("btnSortearMapa").addEventListener("click", async () => 
     <div class="mapa-ganador">🥈 2DO LUGAR: <strong>${ganador2}</strong></div>
   `;
 
-  ruleta.innerText = "✅ Mapas sorteados";
+  escribirRuletaNormal("✅ Mapas sorteados");
 });
 
 /* ================= PARTIDA ACTUAL ================= */
@@ -387,6 +403,7 @@ function renderPartidaActual() {
     partidaActualDiv.innerHTML = "No hay sorteo pendiente por registrar.";
     btnGanoRojo.disabled = true;
     btnGanoAzul.disabled = true;
+    btnEmpate.disabled = true;
     return;
   }
 
@@ -398,29 +415,50 @@ function renderPartidaActual() {
 
   btnGanoRojo.disabled = false;
   btnGanoAzul.disabled = false;
+  btnEmpate.disabled = false;
 }
 
-function registrarGanador(equipoGanador) {
+function registrarGanador(resultado) {
   if (!partidaActual) {
     alert("Primero debes realizar un sorteo.");
     return;
   }
 
-  const textoEquipo = equipoGanador === "rojo" ? "ROJO" : "AZUL";
-  const confirmar = confirm(`¿Confirmas que ganó el equipo ${textoEquipo}?`);
+  const textoResultado =
+    resultado === "rojo" ? "ROJO" :
+    resultado === "azul" ? "AZUL" :
+    "EMPATE";
+
+  const confirmar = confirm(`¿Confirmas el resultado: ${textoResultado}?`);
 
   if (!confirmar) return;
 
-  const ganadores = equipoGanador === "rojo" ? partidaActual.rojo : partidaActual.azul;
-  const perdedores = equipoGanador === "rojo" ? partidaActual.azul : partidaActual.rojo;
+  const esEmpate = resultado === "empate";
+
+  const ganadores = esEmpate
+    ? []
+    : resultado === "rojo"
+      ? partidaActual.rojo
+      : partidaActual.azul;
+
+  const perdedores = esEmpate
+    ? []
+    : resultado === "rojo"
+      ? partidaActual.azul
+      : partidaActual.rojo;
+
+  const empatados = esEmpate
+    ? [...partidaActual.rojo, ...partidaActual.azul]
+    : [];
 
   registrosVersus.unshift({
     id: Date.now(),
     sorteoId: partidaActual.id,
     fecha: new Date().toLocaleString("es-PE"),
-    ganador: equipoGanador,
+    ganador: resultado,
     ganadores,
     perdedores,
+    empatados,
     rojo: partidaActual.rojo,
     azul: partidaActual.azul
   });
@@ -430,7 +468,7 @@ function registrarGanador(equipoGanador) {
   const sorteo = historial.find(h => h.id === partidaActual.id);
 
   if (sorteo) {
-    sorteo.ganador = equipoGanador;
+    sorteo.ganador = resultado;
   }
 
   partidaActual = null;
@@ -441,11 +479,16 @@ function registrarGanador(equipoGanador) {
   renderHistorial();
   renderHistorialVersus();
 
-  alert(`Victoria registrada para: ${ganadores.join(", ")}`);
+  if (esEmpate) {
+    alert(`Empate registrado para: ${empatados.join(", ")}`);
+  } else {
+    alert(`Victoria registrada para: ${ganadores.join(", ")}`);
+  }
 }
 
 btnGanoRojo.addEventListener("click", () => registrarGanador("rojo"));
 btnGanoAzul.addEventListener("click", () => registrarGanador("azul"));
+btnEmpate.addEventListener("click", () => registrarGanador("empate"));
 
 /* ================= RANKING ================= */
 
@@ -457,18 +500,44 @@ function calcularEstadisticas() {
       jugador: j.nombre,
       partidas: 0,
       victorias: 0,
-      derrotas: 0
+      derrotas: 0,
+      empates: 0
     };
   });
 
   registrosVersus.forEach(registro => {
-    registro.ganadores.forEach(nombre => {
+    if (registro.ganador === "empate") {
+      const empatados = registro.empatados || [
+        ...(registro.rojo || []),
+        ...(registro.azul || [])
+      ];
+
+      empatados.forEach(nombre => {
+        if (!stats[nombre]) {
+          stats[nombre] = {
+            jugador: nombre,
+            partidas: 0,
+            victorias: 0,
+            derrotas: 0,
+            empates: 0
+          };
+        }
+
+        stats[nombre].partidas++;
+        stats[nombre].empates++;
+      });
+
+      return;
+    }
+
+    (registro.ganadores || []).forEach(nombre => {
       if (!stats[nombre]) {
         stats[nombre] = {
           jugador: nombre,
           partidas: 0,
           victorias: 0,
-          derrotas: 0
+          derrotas: 0,
+          empates: 0
         };
       }
 
@@ -476,13 +545,14 @@ function calcularEstadisticas() {
       stats[nombre].victorias++;
     });
 
-    registro.perdedores.forEach(nombre => {
+    (registro.perdedores || []).forEach(nombre => {
       if (!stats[nombre]) {
         stats[nombre] = {
           jugador: nombre,
           partidas: 0,
           victorias: 0,
-          derrotas: 0
+          derrotas: 0,
+          empates: 0
         };
       }
 
@@ -515,6 +585,7 @@ function renderRanking() {
         <td>${s.partidas}</td>
         <td>${s.victorias}</td>
         <td>${s.derrotas}</td>
+        <td>${s.empates}</td>
         <td>${porcentaje(s.victorias, s.partidas)}</td>
       </tr>
     `;
@@ -529,6 +600,7 @@ function renderRanking() {
             <th>Partidas</th>
             <th>Victorias</th>
             <th>Derrotas</th>
+            <th>Empates</th>
             <th>% Victoria</th>
           </tr>
         </thead>
@@ -575,6 +647,7 @@ function renderHistorial() {
     let ganadorTexto = "Pendiente de registrar";
     if (item.ganador === "rojo") ganadorTexto = `<span class="ganador-rojo">Ganó ROJO</span>`;
     if (item.ganador === "azul") ganadorTexto = `<span class="ganador-azul">Ganó AZUL</span>`;
+    if (item.ganador === "empate") ganadorTexto = `<span class="ganador-empate">EMPATE</span>`;
 
     div.innerHTML = `
       <small>${item.fecha}</small><br>
@@ -616,14 +689,32 @@ function renderHistorialVersus() {
     const div = document.createElement("div");
     div.className = "historial-item";
 
+    if (registro.ganador === "empate") {
+      const empatados = registro.empatados || [
+        ...(registro.rojo || []),
+        ...(registro.azul || [])
+      ];
+
+      div.innerHTML = `
+        <small>${registro.fecha}</small><br>
+        🤝 <strong>Resultado:</strong> <span class="ganador-empate">EMPATE</span><br>
+        🟥 <strong>Rojo:</strong> ${(registro.rojo || []).join(", ")}<br>
+        🟦 <strong>Azul:</strong> ${(registro.azul || []).join(", ")}<br>
+        👥 <strong>Jugadores:</strong> ${empatados.join(", ")}
+      `;
+
+      historialVersusDiv.appendChild(div);
+      return;
+    }
+
     const clase = registro.ganador === "rojo" ? "ganador-rojo" : "ganador-azul";
     const equipo = registro.ganador === "rojo" ? "ROJO" : "AZUL";
 
     div.innerHTML = `
       <small>${registro.fecha}</small><br>
       🏆 <strong>Ganó:</strong> <span class="${clase}">${equipo}</span><br>
-      ✅ <strong>Ganadores:</strong> ${registro.ganadores.join(", ")}<br>
-      ❌ <strong>Perdedores:</strong> ${registro.perdedores.join(", ")}
+      ✅ <strong>Ganadores:</strong> ${(registro.ganadores || []).join(", ")}<br>
+      ❌ <strong>Perdedores:</strong> ${(registro.perdedores || []).join(", ")}
     `;
 
     historialVersusDiv.appendChild(div);
